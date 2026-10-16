@@ -49,7 +49,7 @@ test('modified draft rejects malformed JSON, invalid grid and oversized dimensio
  const normal=fromPuzzle(puzzle);
  assert.throws(()=>normalizeDraft({...normal, grid:['ア']})); 
  assert.throws(()=>normalizeDraft({...normal,grid: Array(16).fill('ア'.repeat(16))}));
- assert.throws(()=>normalizeDraft({...normal,grid:['ア'.repeat(6),...normal.grid.slice(1)]}));
+ assert.throws(()=>normalizeDraft({...normal,grid:['ア'.repeat(5),...normal.grid.slice(1)]}));
  assert.throws(()=>normalizeDraft({...normal,grid:normal.grid.map(x=>x.replace('カ','A'))}));
  assert.throws(()=>normalizeDraft({...normal,schemaVersion:999}));
 });
