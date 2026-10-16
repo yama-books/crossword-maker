@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f8f4">
+<title>つくる | クロスワード工房</title>
+<style>
+:root{color-scheme:light;--bg:#f7f8f4;--surface:#fff;--ink:#263a34;--muted:#718078;--line:#dce5de;--accent:#2d7460;--tint:#e9f4ee;--edge:#779484;--amber:#d69b4e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.55}
+button,input,select{font:inherit}
+a{color:var(--accent)}
+.wrap{max-width:1280px;margin:auto;padding:23px 20px 60px}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px;color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.07em}
+.heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:clamp(23px,3vw,34px);line-height:1.3;margin:0 0 6px;letter-spacing:-.03em}
+.lead{margin:0;font-size:13px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(220px,285px) minmax(295px,1fr) minmax(240px,310px);gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:19px;min-width:0;box-shadow:0 6px 24px #24463209}
+.panel h2{font-size:16px;margin:0 0 12px}
+.panel h3{font-size:14px;margin:20px 0 9px}
+.meta{font-size:10px;letter-spacing:.13em;font-weight:800;color:#788c80;margin-bottom:7px}
+.stack{display:grid;gap:10px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row>*{min-width:0}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label.field{font-size:12px;font-weight:750;display:grid;gap:5px}
+.input,select{width:100%;padding:10px 10px;border-radius:9px;border:1px solid #cbdad0;background:#fff;color:var(--ink);min-height:43px}
+.input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #91cabe;outline-offset:3px}
+input[type=checkbox]{accent-color:var(--accent)}
+.help{font-size:12px;line-height:1.7;color:var(--muted);margin:3px 0 0}
+.soft-line{height:1px;background:#e9efea;margin:19px 0}
+button{cursor:pointer;touch-action:manipulation}
+.block-btn,.link-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:2px solid #92ac9b;background:#e7eee7;color:#315a48;padding:9px 11px;border-radius:9px;box-shadow:0 4px 0 var(--edge);font-size:12px;font-weight:800;text-decoration:none;text-align:center;transition:transform 95ms ease,box-shadow 95ms ease,border-color 95ms ease;background-image:linear-gradient(to bottom,#f2f6ee 0%,#e5eee6 100%)}
+.block-btn.primary{background:#377965;color:#fff;border-color:#2c6655;box-shadow:0 4px 0 #214f43;background-image:none}
+.block-btn:active,.link-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.block-btn.primary:active{box-shadow:0 1px 0 #214f43}
+.block-btn:disabled{cursor:not-allowed;opacity:.42;box-shadow:none;transform:none}
+.block-btn.active{background:#d7ebdf;border-color:#477d66;color:#1d5843}
+.button-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.choice{display:flex;align-items:center;gap:9px;font-size:12px;margin:10px 0;cursor:pointer}
+.board-panel{padding:20px}
+.board-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.board-header h2{margin:0}
+.board-wrap{display:flex;justify-content:center}
+.board{width:min(100%,470px);display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));border:2px solid #455c52;background:#455c52;gap:2px;border-radius:3px;overflow:hidden;touch-action:manipulation}
+.cell{position:relative;aspect-ratio:1;min-width:0;padding:0;border:0;background:#fff;display:flex;align-items:center;justify-content:center;color:#294638;border-radius:0;font-size:clamp(11px,2.1vw,26px);font-weight:800;line-height:1;user-select:none}
+.cell.black{background:#43564d}
+.cell.empty{color:#bdc9bf}
+.cell.selected{z-index:1;background:#def1e5;box-shadow:inset 0 0 0 3px #d49b4a}
+.cell:hover:not(.black){background:#e5f4ea}
+.cell:focus-visible{outline:3px solid #d49b4a;outline-offset:-3px}
+.num{position:absolute;top:2px;left:3px;font-size:clamp(7px,.8vw,10px);line-height:1;color:#56705f}
+.board-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap;color:var(--muted);font-size:11px}
+.edit-tray{margin-top:19px;padding:12px;background:#f3f8f4;border:1px solid #e3ece4;border-radius:11px;display:grid;gap:8px}
+.edit-tray .input{max-width:190px;min-height:40px;font-size:16px;text-align:center}
+.status{font-size:12px;padding:11px 12px;background:#f3f8f4;color:#406d51;border-radius:10px;margin-bottom:13px}
+.status.warning{background:#fff5e7;color:#855c31}
+.mini{font-size:11px;color:var(--muted)}
+.issues{margin:10px 0 0;padding-left:19px;font-size:11px;color:#8b5b39;max-height:140px;overflow:auto;overflow-wrap:anywhere}
+.clues{display:grid;gap:10px}
+.clue-list{display:grid;gap:8px}
+.clue-line{display:grid;grid-template-columns:39px minmax(0,1fr);align-items:center;gap:6px;font-size:12px}
+.clue-id{font-weight:800;color:var(--accent)}
+.clue-line .input{padding:7px 9px;font-size:12px;min-height:38px}
+.clue-line .input:focus{background:#f2f9f4}
+.footer{text-align:center;color:var(--muted);font-size:11px;padding:23px 0}
+[hidden]{display:none!important}
+@keyframes cw-slide{from{transform:translateX(22px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes cw-mask{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes cw-pixel{from{transform:scale(.75);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes cw-shape{from{clip-path:circle(0% at 50% 50%);opacity:.4}to{clip-path:circle(75% at 50% 50%);opacity:1}}
+@keyframes cw-liquid{0%{opacity:0;transform:scale(.66) translateY(12px);border-radius:45%}75%{border-radius:28%;transform:scale(1.06)}100%{opacity:1;transform:none;border-radius:0}}
+@keyframes cw-wave{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.board.motion .cell{animation:var(--motion) .4s cubic-bezier(.2,.78,.28,1) both;animation-delay:var(--delay)}
+@media(max-width:1080px){.layout{grid-template-columns:minmax(200px,270px) 1fr}.result-panel{grid-column:1/-1}.clues{grid-template-columns:1fr 1fr}}
+@media(max-width:690px){.wrap{padding:16px 12px 40px}.layout{display:flex;flex-direction:column;gap:12px}.panel{width:100%;padding:16px}.board-panel{order:0}.tools-panel{order:1}.result-panel{order:2}.board{width:min(100%,460px)}.cell{font-size:clamp(11px,4.5vw,26px)}.clues{grid-template-columns:1fr}.topline{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}.block-btn,.link-btn{transition:none}}
+@media print{.topline,.heading,.tools-panel,.result-panel,.edit-tray,.board-foot,.footer,.block-btn{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}.layout{display:block}.panel{border:none;box-shadow:none}.board{width:130mm}.cell{font-size:16pt}.cell.black{background:#333!important;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topline"><span>CROSSWORD STUDIO / EDIT MODE</span><span>RETRO MATTE · M2</span></div>
+  <header class="heading">
+    <div><h1>クロスワード工房</h1><p class="lead">ことばを並べて、少しずつ完成させる。</p></div>
+    <a class="link-btn" href="./index.html">← とく画面へ</a>
+  </header>
+  <main class="layout">
+    <aside class="panel tools-panel" aria-label="制作設定">
+      <div class="meta">01 / CREATE</div><h2>盤面をつくる</h2>
+      <div class="stack">
+        <label class="field" for="puzzle-title">タイトル<input class="input" id="puzzle-title" maxlength="80" autocomplete="off"></label>
+        <div class="split">
+          <label class="field" for="rows">タテ <select id="rows"></select></label>
+          <label class="field" for="cols">ヨコ <select id="cols"></select></label>
+        </div>
+        <div class="button-grid">
+          <button type="button" class="block-btn" id="new">新しい盤面</button>
+          <button type="button" class="block-btn" id="sample">例題を編集</button>
+        </div>
+        <p class="help">盤面サイズを指定して「新しい盤面」。途中の作業は自動保存されます。</p>
+      </div>
+      <div class="soft-line"></div>
+      <h3>編集ツール</h3>
+      <div class="button-grid">
+        <button class="block-btn active" type="button" id="tool-letter" aria-pressed="true">あ 文字</button>
+        <button class="block-btn" type="button" id="tool-black" aria-pressed="false">■ 黒マス</button>
+      </div>
+      <p class="help">マスをタップして文字入力。黒マスツールではマスをタップして切り替えます。</p>
+      <div class="button-grid" style="margin-top:14px">
+        <button class="block-btn" id="undo" type="button">↶ 戻す</button>
+        <button class="block-btn" id="redo" type="button">↷ やり直す</button>
+      </div>
+      <h3>盤面ルール</h3>
+      <label class="choice"><input type="checkbox" id="symmetry"> 黒マスの180度対称</label>
+      <label class="choice"><input type="checkbox" id="no-adjacent"> 黒マスの縦横隣接を禁止</label>
+      <p class="help">この設定は問題JSONにも記録されます。ほかの検証ルールは標準設定です。</p>
+      <div class="soft-line"></div>
+      <h3>保存と読込</h3>
+      <div class="stack">
+        <button class="block-btn primary" id="save" type="button">↓ 作業JSONを保存</button>
+        <button class="block-btn" id="load" type="button">↑ JSONを読み込む</button>
+        <button class="block-btn" id="export-puzzle" type="button" disabled>✓ 完成問題JSON</button>
+        <input id="file" type="file" accept=".json,application/json" hidden>
+      </div>
+      <p class="help">未完成でも作業JSONを保存できます。完成問題の出力は全マス・全カギの検証を通ったときだけ有効です。</p>
+    </aside>
+    <section class="panel board-panel" aria-label="盤面編集">
+      <div class="board-header"><div><div class="meta">02 / BOARD</div><h2>編集キャンバス</h2></div><button class="block-btn" id="motion-preview" type="button">✦ 演出を試す</button></div>
+      <div class="board-wrap"><div id="board" class="board" role="grid" aria-label="編集中のクロスワード"></div></div>
+      <div class="board-foot"><span>■ 黒マス　□ 未入力</span><span id="size-label">7 × 7</span></div>
+      <div class="edit-tray">
+        <label class="field" for="cell-entry">選択したマスの文字</label>
+        <div class="row">
+          <input id="cell-entry" class="input" type="text" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="カナ1文字" aria-label="選択マスのカナを入力">
+          <button class="block-btn" id="erase" type="button">消す</button>
+          <span class="mini" id="cell-label">マスを選択</span>
+        </div>
+        <p class="help">PCではマスを選んで直接キー入力できます。スマホでは上の入力欄を使用します。</p>
+      </div>
+      <p id="message" class="help" role="status" aria-live="polite"></p>
+    </section>
+    <aside class="panel result-panel" aria-label="問題の完成状況">
+      <div class="meta">03 / REVIEW</div><h2>盤面チェック</h2>
+      <div id="validation" class="status warning" role="status" aria-live="polite">読み込み中...</div>
+      <div class="mini" id="stats"></div>
+      <ul id="issues" class="issues"></ul>
+      <div class="soft-line"></div>
+      <div class="clues">
+        <section><h3>ヨコのカギ →</h3><div id="across" class="clue-list"></div></section>
+        <section><h3>タテのカギ ↓</h3><div id="down" class="clue-list"></div></section>
+      </div>
+      <p class="help" style="margin-top:18px">カギ欄は直接編集できます。盤面を変更しても、同じ開始マスのカギは保持されます。</p>
+    </aside>
+  </main>
+  <div class="footer">クロスワード工房 · 作業内容はこの端末のブラウザ内に保存されます · GitHub Pages対応</div>
+</div>
+<script type="module" src="./src/editor/app.mjs"></script>
+</body>
+</html>
