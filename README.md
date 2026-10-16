@@ -45,3 +45,9 @@ GitHub Pages公開URL、または `index.html` をローカルで直接開くと
 ## ライセンス
 
 公開リポジトリですが、現時点では明示的なオープンソースライセンスは設定していません。
+
+## GitHub Pagesの初回公開設定
+
+このリポジトリでは `main` へのpushで公開ワークフローが自動実行されます。ただし、最初の1回だけ、リポジトリ管理者が [Settings → Pages](https://github.com/yama-books/crossword-maker/settings/pages) で **Build and deployment → Source = GitHub Actions** を選択してください。
+
+その後、[Actions → Publish crossword-maker](https://github.com/yama-books/crossword-maker/actions/workflows/pages.yml) から **Run workflow**（または失敗した実行の **Re-run jobs**）を選ぶとサイトが公開されます。以後の `main` 更新は自動で公開されます。
