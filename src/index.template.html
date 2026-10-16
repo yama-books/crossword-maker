@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#f7f8f8" />
+<title>学校生活と身近なことば | 日本語クロスワード</title>
+<style>
+:root {color-scheme:light;--bg:#f7f8f8;--surface:#fff;--ink:#26343a;--muted:#6b787d;--rule:#d9e0df;--accent:#117b77;--soft:#e0f4ee;--selection:#b8e9dd;--bad:#ffdddb}
+* { box-sizing:border-box; }
+body {margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;line-height:1.6}
+.wrap{max-width:1050px;margin:0 auto;padding:26px 22px 70px}
+.topline{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em}
+.pill{border:1px solid #cbdad6;border-radius:99px;padding:4px 11px;letter-spacing:0;white-space:nowrap}
+h1{font-size:clamp(24px,3.5vw,38px);letter-spacing:-.04em;margin:0 0 6px;line-height:1.25}
+.lead{font-size:14px;color:var(--muted);margin:0 0 25px}
+.layout{display:grid;grid-template-columns:minmax(275px,450px) minmax(280px,1fr);gap:25px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:18px;box-shadow:0 7px 25px rgba(34,49,47,.035)}
+.board-panel{padding:20px}
+.progress-label{display:flex;justify-content:space-between;font-weight:600;font-size:13px;margin-bottom:10px}
+.progressbar{height:5px;border-radius:99px;background:#edf1ee;overflow:hidden;margin-bottom:17px}
+.progressbar span{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.board{width:100%;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;background:#435057;border:2px solid #435057;border-radius:5px;overflow:hidden;touch-action:manipulation}
+.sq{aspect-ratio:1/1;background:#fff;position:relative;min-width:0;display:flex;align-items:center;justify-content:center}
+.sq.black{background:#334247}
+.sq.selected{background:var(--selection)}
+.sq.in-word{background:var(--soft)}
+.sq.wrong{background:var(--bad)}
+.sq.revealed{background:#c5e8dc}
+.num{position:absolute;font-size:clamp(9px,1.1vw,12px);top:2px;left:4px;line-height:1;font-weight:700;color:#526166;pointer-events:none}
+.sq input{min-width:0;width:100%;height:100%;border:0;background:transparent;text-align:center;color:var(--ink);font-weight:750;font-size:clamp(20px,3.5vw,31px);padding:9px 0 0;font-family:inherit;outline:none;border-radius:0;caret-color:var(--accent)}
+.sq.selected:focus-within{box-shadow:inset 0 0 0 2px var(--accent)}
+.selected-clue{margin:16px 0 12px;padding:12px 13px;min-height:76px;background:#f3f8f5;border-radius:11px;font-size:14px;display:flex;flex-direction:column;justify-content:center}
+.selected-clue small{color:var(--accent);font-weight:800;letter-spacing:.05em}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}
+button{appearance:none;border:1px solid var(--rule);background:#fff;border-radius:10px;padding:12px 9px;font-weight:700;font-size:13px;color:var(--ink);font-family:inherit;cursor:pointer;touch-action:manipulation}
+button.primary{background:var(--accent);border-color:var(--accent);color:white}
+button:hover{filter:brightness(.98)}
+button:focus-visible{outline:3px solid #8fcec3;outline-offset:2px}
+.info{font-size:12px;color:var(--muted);margin:10px 0 0}
+.status{font-size:13px;min-height:23px;margin-top:10px;font-weight:700;color:var(--accent)}
+.clues{display:grid;gap:16px}
+.clue-panel{padding:20px}
+h2{font-size:18px;margin:0 0 10px;line-height:1.2}
+.clue-list{display:grid;gap:5px}
+.clue{width:100%;display:flex;text-align:left;align-items:baseline;gap:11px;line-height:1.55;min-height:46px;border:1px solid transparent;border-radius:9px;font-weight:500;padding:8px;font-size:14px}
+.clue:hover,.clue.active{background:#eff7f3;border-color:#d4e8dd}
+.clue-num{display:inline-block;width:22px;min-width:22px;font-weight:850;color:var(--accent);font-size:13px}
+.clue-text{flex:1}
+.clue-len{font-size:12px;color:var(--muted);white-space:nowrap}
+.footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
+@media(max-width:740px){.wrap{padding:19px 13px 42px}.layout{grid-template-columns:1fr;gap:15px}.board-panel,.clue-panel{padding:16px}.board{max-width:480px;margin:0 auto}.clues{grid-template-columns:1fr}.sq input{font-size:clamp(21px,6vw,34px)}.num{font-size:11px}.topline{font-size:10px}}
+@media print{
+ @page{size:A4;margin:18mm}body{background:#fff}.wrap{max-width:none;padding:0}.topline,.actions,.progressbar,.progress-label,.status,.info,.footer,.selected-clue{display:none!important}
+ .layout{display:block}.panel{border:0;box-shadow:none;padding:0}.board{width:116mm;margin:10mm auto 13mm;gap:1px}.sq input{font-size:20pt;color:transparent!important}.clues{display:grid;grid-template-columns:1fr 1fr;gap:16px}.clue-panel{padding:0}.clue{break-inside:avoid;min-height:auto;padding:5px 0;font-size:10pt}.clue-len{display:none}h1{font-size:22pt}.lead{font-size:10pt}.sq.selected,.sq.in-word,.sq.revealed,.sq.wrong{background:#fff!important}.sq.black{background:#333!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}.num{font-size:9pt}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <header>
+  <div class="topline"><span>JAPANESE CROSSWORD / PROTOTYPE 01</span><span class="pill">6 × 6 ・ 全14問</span></div>
+  <h1>学校生活と身近なことば</h1>
+  <p class="lead">タテ・ヨコのカギを解いて、すべての白マスを埋めましょう。小さい「ッ・ャ・ュ・ョ」は大きい文字で入れます。</p>
+ </header>
+ <main class="layout">
+  <section class="panel board-panel" aria-label="クロスワードの盤面">
+   <div class="progress-label"><span>進み具合</span><span id="progress-text">0 / 26 マス</span></div>
+   <div class="progressbar" aria-hidden="true"><span id="progress-fill"></span></div>
+   <div class="board" id="board" role="group" aria-label="6行6列のクロスワード"></div>
+   <div class="selected-clue" id="selected-clue" aria-live="polite"></div>
+   <div class="actions">
+     <button class="primary" id="check">答え合わせ</button>
+     <button id="hint">1文字ヒント</button>
+     <button id="reveal">解答を表示</button>
+     <button id="clear">すべて消す</button>
+   </div>
+   <div class="actions" style="margin-top:0;grid-template-columns:1fr"><button id="print">印刷する / PDFに保存</button></div>
+   <div class="status" id="status" aria-live="polite"></div>
+   <p class="info">マスをタップして入力。カギを選ぶと対応するマスがハイライトされます。同じマスをもう一度タップすると、タテとヨコを切り替えられます。途中経過は可能な環境では自動保存されます。</p>
+  </section>
+  <section class="clues" id="clue-lists"></section>
+ </main>
+ <div class="footer">試作品 © 教材用パズル / オフラインで動作します</div>
+</div>
+<script>
+'use strict';
+const puzzle=/*__PUZZLE_DATA__*/;
+const entries=puzzle.entries;
+const M=puzzle.size;
+const cells={};
+const byCoord=(r,c)=>`${r},${c}`;
+const wordsFor=(r,c)=>entries.filter(e=>e.cells.some(x=>x[0]===r&&x[1]===c));
+let selected=entries.find(e=>e.direction==='A');
+let selectedAt=byCoord(...selected.start);
+let values={};let helped=new Set();let incorrect=new Set();let showingAnswers=false;let composing=false;
+try{values=JSON.parse(localStorage.getItem('jp-crossword-proto-v1'))||{}}catch(_){values={}}
+const grid=document.getElementById('board');
+for(let r=0;r<M;r++)for(let c=0;c<M;c++){
+ const k=byCoord(r,c),ch=puzzle.grid[r][c];
+ const box=document.createElement('div');box.className='sq'+(ch==='■'?' black':'');box.dataset.coord=k;
+ if(ch!=='■'){
+  const n=puzzle.numbers[k];
+  if(n){const tag=document.createElement('span');tag.className='num';tag.textContent=n;box.append(tag)}
+  const input=document.createElement('input');input.type='text';input.autocomplete='off';input.autocorrect='off';input.spellcheck=false;
+  input.setAttribute('aria-label',`${r+1}行${c+1}列`);input.dataset.coord=k;input.value=values[k]||'';
+  input.addEventListener('compositionstart',()=>{composing=true});
+  input.addEventListener('compositionend',()=>{composing=false;applyInput(input)});
+  input.addEventListener('input',()=>{if(!composing)applyInput(input)});
+  input.addEventListener('click',()=>chooseCell(r,c,true));
+  input.addEventListener('keydown',e=>handleKey(e,r,c));
+  box.append(input);cells[k]=input;
+ }
+ grid.append(box);
+}
+const groups=[['A','ヨコのカギ'],['D','タテのカギ']];
+for(const [dir,heading] of groups){
+ const section=document.createElement('section');section.className='panel clue-panel';
+ const h=document.createElement('h2');h.textContent=heading;section.append(h);
+ const list=document.createElement('div');list.className='clue-list';
+ for(const e of entries.filter(e=>e.direction===dir).sort((a,b)=>a.number-b.number)){
+  const btn=document.createElement('button');btn.className='clue';btn.type='button';btn.dataset.clue=`${dir}${e.number}`;
+  btn.innerHTML=`<span class="clue-num">${e.number}</span><span class="clue-text"></span><span class="clue-len">${e.answer.length}文字</span>`;
+  btn.querySelector('.clue-text').textContent=e.clue;
+  btn.addEventListener('click',()=>selectEntry(e,true));list.append(btn);
+ }
+ section.append(list);document.getElementById('clue-lists').append(section);
+}
+/*__KANA_CORE__*/
+const katakana=(text)=>normalizeKana(text);
+function chooseCell(r,c,click){
+ const k=byCoord(r,c);const opts=wordsFor(r,c);if(!opts.length)return;
+ if(click&&selectedAt===k&&opts.length>1){selected=opts.find(e=>e!==selected)||opts[0]}
+ else if(!selected||!selected.cells.some(x=>byCoord(...x)===k)){selected=opts.find(e=>e.direction==='A')||opts[0]}
+ selectedAt=k;paint();
+}
+function selectEntry(e,focus){selected=e;selectedAt=byCoord(...e.start);paint();if(focus)cells[selectedAt]?.focus({preventScroll:true})}
+function paint(){
+ const selectedSet=new Set(selected.cells.map(x=>byCoord(...x)));
+ document.querySelectorAll('.sq').forEach(box=>{
+  const k=box.dataset.coord;box.classList.toggle('selected',k===selectedAt);box.classList.toggle('in-word',k!==selectedAt&&selectedSet.has(k));box.classList.toggle('wrong',incorrect.has(k));box.classList.toggle('revealed',helped.has(k));
+ });
+ document.querySelectorAll('[data-clue]').forEach(btn=>btn.classList.toggle('active',btn.dataset.clue===selected.direction+selected.number));
+ document.getElementById('selected-clue').innerHTML=`<small>${selected.direction==='A'?'ヨコ':'タテ'} ${selected.number} / ${selected.answer.length}文字</small><span></span>`;
+ document.getElementById('selected-clue').lastChild.textContent=selected.clue;
+ for(const [k,input] of Object.entries(cells)){input.value=showingAnswers?puzzle.grid[Number(k.split(',')[0])][Number(k.split(',')[1])]:values[k]||'';input.readOnly=showingAnswers}
+ const used=Object.keys(cells).filter(k=>values[k]).length;
+ document.getElementById('progress-text').textContent=`${used} / ${Object.keys(cells).length} マス`;
+ document.getElementById('progress-fill').style.width=`${used/Object.keys(cells).length*100}%`;
+ document.getElementById('reveal').textContent=showingAnswers?'解答を隠す':'解答を表示';
+}
+function save(){try{localStorage.setItem('jp-crossword-proto-v1',JSON.stringify(values))}catch(_){}}
+function moveInEntry(k,offset){
+ const index=selected.cells.findIndex(x=>byCoord(...x)===k);
+ if(index<0)return;
+ const next=selected.cells[Math.max(0,Math.min(selected.cells.length-1,index+offset))];
+ selectedAt=byCoord(...next);paint();cells[selectedAt]?.focus({preventScroll:true});
+}
+function applyInput(input){
+ if(showingAnswers)return;
+ const k=input.dataset.coord,raw=input.value,text=katakana(raw);
+ const cursor=selected.cells.findIndex(x=>byCoord(...x)===k);
+ if(text){
+  [...text].forEach((ch,j)=>{
+   if(cursor+j>=0&&cursor+j<selected.cells.length){const cell=byCoord(...selected.cells[cursor+j]);values[cell]=ch;incorrect.delete(cell)}
+  });
+  selectedAt=k;paint();save();
+  if(cursor+text.length<selected.cells.length)moveInEntry(k,text.length);
+ }else{
+  values[k]='';incorrect.delete(k);paint();save();
+ }
+ document.getElementById('status').textContent='';
+}
+function handleKey(ev,r,c){
+ if(composing||showingAnswers)return;
+ const k=byCoord(r,c);
+ if(ev.key==='Backspace'){
+  ev.preventDefault();if(values[k]){values[k]='';incorrect.delete(k);paint();save()}else moveInEntry(k,-1);return;
+ }
+ if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();chooseCell(r,c,true);return}
+ const dir={'ArrowRight':[0,1],'ArrowLeft':[0,-1],'ArrowDown':[1,0],'ArrowUp':[-1,0]}[ev.key];
+ if(dir){ev.preventDefault();const nr=r+dir[0],nc=c+dir[1];if(cells[byCoord(nr,nc)]){chooseCell(nr,nc,false);cells[selectedAt]?.focus()}}
+}
+function message(txt){document.getElementById('status').textContent=txt}
+document.getElementById('check').addEventListener('click',()=>{
+ incorrect.clear();let filled=0;
+ for(const k of Object.keys(cells)){
+  const [r,c]=k.split(',').map(Number),v=values[k]||'';
+  if(v)filled++;
+  if(v&&v!==puzzle.grid[r][c])incorrect.add(k);
+ }
+ paint();
+ if(incorrect.size)message(`まちがっているマスが ${incorrect.size} 個あります。赤いマスを確認してください。`);
+ else if(filled===Object.keys(cells).length)message('全マス正解！ クリアです 🎉');
+ else message(`ここまで正解です。残り ${Object.keys(cells).length-filled} マス！`);
+});
+document.getElementById('hint').addEventListener('click',()=>{
+ if(showingAnswers){message('解答表示中はヒントを使えません。');return}
+ const k=selectedAt,[r,c]=k.split(',').map(Number);
+ values[k]=puzzle.grid[r][c];helped.add(k);incorrect.delete(k);save();paint();message('選んだマスの1文字を表示しました。');
+});
+document.getElementById('reveal').addEventListener('click',()=>{
+ showingAnswers=!showingAnswers;paint();message(showingAnswers?'解答を表示しています。入力した文字は保持されています。':'解答を隠しました。');
+});
+document.getElementById('clear').addEventListener('click',()=>{
+ if(!window.confirm('入力した文字をすべて消しますか？'))return;
+ values={};incorrect.clear();helped.clear();showingAnswers=false;save();paint();message('盤面をリセットしました。');
+});
+document.getElementById('print').addEventListener('click',()=>window.print());
+paint();
+</script>
+</body></html>
