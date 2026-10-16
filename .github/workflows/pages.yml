@@ -21,14 +21,22 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run structural tests
+        run: npm test
+      - name: Check player consistency
+        run: npm run check
+      - name: Build validated static site
+        run: npm run build
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: dist
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
