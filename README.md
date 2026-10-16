@@ -23,7 +23,7 @@ GitHub Pages公開URL、または `index.html` をローカルで直接開くと
 | `puzzle.json` | 盤面・ヒント・解答のデータ |
 | `.github/workflows/pages.yml` | GitHub Pagesへの自動公開ワークフロー |
 
-`index.html` にはオフライン動作用に同じ問題データを埋め込んでいます。問題更新時は双方を同期してください。
+**問題データの正本は `puzzle.json` だけです。** `index.html` は `src/index.template.html` と `src/core/kana.mjs` から自動生成された配布ファイルです。直接編集しないでください。
 
 ## パズルの基本ルール
 
@@ -40,7 +40,7 @@ GitHub Pages公開URL、または `index.html` をローカルで直接開くと
 5. テーマ・難易度設定、手動編集
 6. 教材向けPDF/Word出力と問題管理
 
-**現時点では自動生成機能は未実装です。**
+**現時点ではクロスワードの自動作成・編集UIは未実装です。** ただしM1ではカナ正規化・盤面の検証エンジンと自動テストを追加しました。
 
 ## ライセンス
 
@@ -55,3 +55,15 @@ GitHub Pages公開URL、または `index.html` をローカルで直接開くと
 ## 開発指針
 
 今後の仕様、品質基準、自動生成の方針、実装優先順位は [開発指針（docs/DEVELOPMENT_GUIDELINES.md）](docs/DEVELOPMENT_GUIDELINES.md) を正本として管理します。機能追加時はこの文書を確認し、決定事項を反映してください。
+
+## M1開発手順（基本はGitHub上で作業）
+
+- 正本はこの公開リポジトリです。作業ブランチ→PR→CI確認→mainへのマージで進めます。
+- 問題の内容やカギを修正する場合は `puzzle.json` を編集し、`npm run sync` で `index.html` を再生成して一緒にコミットしてください。
+- 画面の変更は `src/index.template.html`、カナ入力の規則は `src/core/kana.mjs` を編集します。
+- GitHub Actionsは `npm test`（構造検証）→`npm run check`（生成HTMLとの一致）→`npm run build`（配布生成）の順に実行します。
+- mainのPages公開もテストが成功した場合に限って進みます。配布は `dist/index.html` を使い、ルートの開発ファイルを公開しません。
+- Node.js 22以降をCIで使います。外部パッケージのインストールは不要です。ローカル開発は必須ではありません。
+- 現在の6×6・14問は、交差の一致・番号・黒マス配置・白マス連結などを自動で検査します。語彙やカギの自然さは別途人間が確認します。
+
+詳しくは [M1実装メモ](docs/M1_IMPLEMENTATION.md) と [開発指針](docs/DEVELOPMENT_GUIDELINES.md) を参照してください。
