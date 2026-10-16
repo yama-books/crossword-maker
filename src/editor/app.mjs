@@ -98,7 +98,9 @@ function makeClueRow(slot){
  label.append(n,input);return label;
 }
 function render(){
- const review=inspectDraft(draft),rows=draft.grid.length,cols=[...draft.grid[0]].length;
+ const rows=draft.grid.length,cols=[...draft.grid[0]].length;
+ selected={r:Math.min(rows-1,Math.max(0,selected?.r ?? 0)),c:Math.min(cols-1,Math.max(0,selected?.c ?? 0))};
+ const review=inspectDraft(draft);
  $('rows').value=String(rows);$('cols').value=String(cols);
  if(document.activeElement!==$('puzzle-title'))$('puzzle-title').value=draft.title;
  $('symmetry').checked=draft.rules.rotationalSymmetry;
@@ -161,7 +163,7 @@ $('sample').addEventListener('click',async()=>{
   const response=await fetch('./puzzle.json',{cache:'no-store'});
   if(!response.ok)throw new Error('サンプルを取得できません ('+response.status+')');
   const sample=fromPuzzle(await response.json());
-  commit(sample,{motion:true});selected={r:0,c:1};render();showMotion();say('既存の14問を編集用に読み込みました。');
+  selected={r:0,c:1};commit(sample,{motion:true});say('既存の14問を編集用に読み込みました。');
  }catch(e){say('例題の読み込みに失敗しました：'+e.message);}
 });
 $('puzzle-title').addEventListener('change',()=>{
