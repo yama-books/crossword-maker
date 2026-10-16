@@ -51,3 +51,7 @@ GitHub Pages公開URL、または `index.html` をローカルで直接開くと
 このリポジトリでは `main` へのpushで公開ワークフローが自動実行されます。ただし、最初の1回だけ、リポジトリ管理者が [Settings → Pages](https://github.com/yama-books/crossword-maker/settings/pages) で **Build and deployment → Source = GitHub Actions** を選択してください。
 
 その後、[Actions → Publish crossword-maker](https://github.com/yama-books/crossword-maker/actions/workflows/pages.yml) から **Run workflow**（または失敗した実行の **Re-run jobs**）を選ぶとサイトが公開されます。以後の `main` 更新は自動で公開されます。
+
+## 開発指針
+
+今後の仕様、品質基準、自動生成の方針、実装優先順位は [開発指針（docs/DEVELOPMENT_GUIDELINES.md）](docs/DEVELOPMENT_GUIDELINES.md) を正本として管理します。機能追加時はこの文書を確認し、決定事項を反映してください。
