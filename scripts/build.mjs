@@ -1,4 +1,4 @@
-import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
+import {readFileSync, writeFileSync, mkdirSync, copyFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {validatePuzzle} from '../src/core/puzzle.mjs';
 
@@ -23,5 +23,12 @@ if (process.argv.includes('--sync')) {
 } else {
   mkdirSync(resolve(root,'dist'),{recursive:true});
   writeFileSync(resolve(root,'dist/index.html'),html);
-  console.log('Built dist/index.html from validated puzzle.json');
+  for (const path of ['editor.html','puzzle.json',
+      'src/editor/app.mjs','src/editor/model.mjs',
+      'src/core/kana.mjs','src/core/puzzle.mjs']) {
+    const target=resolve(root,'dist',path);
+    mkdirSync(resolve(target,'..'),{recursive:true});
+    copyFileSync(resolve(root,path),target);
+  }
+  console.log('Built validated player and editable studio in dist/');
 }
