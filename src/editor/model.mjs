@@ -99,6 +99,31 @@ export function inspectDraft(draft) {
   if (orphan) issues.push('どの語枠にも属さない白マスが'+orphan+'個あります。');
   if (blanks) issues.push('未入力のマス：'+blanks+'個');
   if (missingClues.length) issues.push('カギが未入力：'+missingClues.length+'件');
+  // Check structural rules even while blanks remain. Incomplete is not the same as invalid.
+  const height=analysis.height,width=analysis.width,rows=analysis.rows;
+  let blackAdjacent=0,asymmetric=0;
+  const white=[];
+  for(let r=0;r<height;r++)for(let c=0;c<width;c++){
+    if(rows[r][c]!=='■'){white.push([r,c]);continue;}
+    if(draft.rules.forbidAdjacentBlacks &&
+      ((r+1<height&&rows[r+1][c]==='■')||(c+1<width&&rows[r][c+1]==='■')))blackAdjacent++;
+    if(draft.rules.rotationalSymmetry && rows[height-1-r][width-1-c]!=='■')asymmetric++;
+  }
+  if(blackAdjacent)issues.push('隣接する黒マスが'+blackAdjacent+'組あります。');
+  if(asymmetric)issues.push('180度対称でない黒マスが'+asymmetric+'個あります。');
+  if(draft.rules.requireConnectedWhite&&white.length){
+    const visited=new Set([white[0].join(',')]),queue=[white[0]];
+    for(let p=0;p<queue.length;p++){
+      const [r,c]=queue[p];
+      for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+        const y=r+dr,x=c+dc,k=y+','+x;
+        if(y>=0&&x>=0&&y<height&&x<width&&rows[y][x]!=='■'&&!visited.has(k)){
+          visited.add(k);queue.push([y,x]);
+        }
+      }
+    }
+    if(visited.size!==white.length)issues.push('白マスが分断されています。');
+  }
   const puzzle=toPuzzle(draft);
   // A draft can be saved at any time. Only a fully populated puzzle is publishable.
   const validation=blanks===0 ? validatePuzzle(puzzle) : null;
