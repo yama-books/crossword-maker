@@ -54,6 +54,16 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
  @page{size:A4;margin:18mm}body{background:#fff}.wrap{max-width:none;padding:0}.topline,.actions,.progressbar,.progress-label,.status,.info,.footer,.selected-clue{display:none!important}
  .layout{display:block}.panel{border:0;box-shadow:none;padding:0}.board{width:116mm;margin:10mm auto 13mm;gap:1px}.sq input{font-size:20pt;color:transparent!important}.clues{display:grid;grid-template-columns:1fr 1fr;gap:16px}.clue-panel{padding:0}.clue{break-inside:avoid;min-height:auto;padding:5px 0;font-size:10pt}.clue-len{display:none}h1{font-size:22pt}.lead{font-size:10pt}.sq.selected,.sq.in-word,.sq.revealed,.sq.wrong{background:#fff!important}.sq.black{background:#333!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}.num{font-size:9pt}
 }
+
+/* Matte pixel-block controls. The clue list remains deliberately flat. */
+.actions button,.edit-link{border:2px solid #91ad9e;box-shadow:0 4px 0 #799685;border-radius:9px;transition:transform .09s ease,box-shadow .09s ease}
+.actions button.primary{border-color:#246855;box-shadow:0 4px 0 #174d3f}
+.actions button:active,.edit-link:active{transform:translateY(3px);box-shadow:0 1px 0 #799685}
+.actions button.primary:active{box-shadow:0 1px 0 #174d3f}
+.edit-link{display:inline-flex;align-items:center;background:#e4efe5;color:#235b47;font-size:13px;font-weight:800;text-decoration:none;padding:10px 15px;margin:-10px 0 20px}
+.edit-link:focus-visible{outline:3px solid #8fcec3;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.actions button,.edit-link{transition:none}}
+@media print{.edit-link{display:none!important}.actions button{box-shadow:none}}
 </style>
 </head>
 <body>
@@ -62,6 +72,7 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
   <div class="topline"><span>JAPANESE CROSSWORD / PROTOTYPE 01</span><span class="pill">6 × 6 ・ 全14問</span></div>
   <h1>学校生活と身近なことば</h1>
   <p class="lead">タテ・ヨコのカギを解いて、すべての白マスを埋めましょう。小さい「ッ・ャ・ュ・ョ」は大きい文字で入れます。</p>
+  <a class="edit-link" href="./editor.html">✦ クロスワードをつくる →</a>
  </header>
  <main class="layout">
   <section class="panel board-panel" aria-label="クロスワードの盤面">
