@@ -58,6 +58,10 @@ button{cursor:pointer;touch-action:manipulation}
 .status{font-size:12px;padding:11px 12px;background:#f3f8f4;color:#406d51;border-radius:10px;margin-bottom:13px}
 .status.warning{background:#fff5e7;color:#855c31}
 .mini{font-size:11px;color:var(--muted)}
+.word-source{min-height:180px;line-height:1.72;font-size:12px;resize:vertical;overflow:auto}
+.word-result{font-size:12px;line-height:1.7;margin:9px 0 0;padding:10px;border-radius:9px;background:#f0f6f0;color:#365a46}
+.word-result.warning{background:#fff5e7;color:#855c31}
+.unplaced{font-size:11px;line-height:1.7;margin:5px 0 0;padding-left:19px;color:#815b37}
 .issues{margin:10px 0 0;padding-left:19px;font-size:11px;color:#8b5b39;max-height:140px;overflow:auto;overflow-wrap:anywhere}
 .clues{display:grid;gap:10px}
 .clue-list{display:grid;gap:8px}
@@ -102,6 +106,20 @@ button{cursor:pointer;touch-action:manipulation}
         </div>
         <p class="help">盤面サイズを指定して「新しい盤面」。途中の作業は自動保存されます。</p>
       </div>
+      <div class="soft-line"></div>
+      <div class="meta">02 / WORDS FIRST · BETA</div>
+      <h3>単語から盤面を生成</h3>
+      <p class="help">1行につき「表示名 | よみ | カギ」。ひらがなの語なら「よみ | カギ」でも入力できます。</p>
+      <label class="field" for="word-source">使いたい単語
+        <textarea id="word-source" class="input word-source" spellcheck="false" aria-label="自動配置する単語とカギ" placeholder="図書館 | としょかん | 本を読む場所&#10;がっこう | 勉強するところ"></textarea>
+      </label>
+      <div class="button-grid" style="margin-top:9px">
+        <button class="block-btn" id="word-sample" type="button">例の単語を入れる</button>
+        <button class="block-btn primary" id="generate-words" type="button">✦ 配置案をつくる</button>
+      </div>
+      <div id="word-result" class="word-result" role="status" aria-live="polite" hidden></div>
+      <ul id="unplaced-words" class="unplaced" aria-label="配置できなかった単語"></ul>
+      <p class="help">配置できた語も、標準の黒マス配置などの検証で未完成となる場合があります。完成問題には盤面チェックが必要です。</p>
       <div class="soft-line"></div>
       <h3>編集ツール</h3>
       <div class="button-grid">
