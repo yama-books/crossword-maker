@@ -59,9 +59,21 @@ export function normalizeDraft(source) {
       if (/^[AD]:\d+,\d+$/.test(k) && typeof v === 'string') clues[k] = v.slice(0,500);
     }
   }
-  return {schemaVersion:DRAFT_VERSION,kind:'crossword-draft',
+  const draft={schemaVersion:DRAFT_VERSION,kind:'crossword-draft',
     title:String(source.title || '無題のクロスワード').slice(0,80),
     grid, clues, rules:rulesFrom(source.rules)};
+  if(source.generation?.kind==='words-first'){
+    const g=source.generation;
+    draft.generation={kind:'words-first',source:String(g.source??'').slice(0,36000),
+      total:Math.max(0,Math.min(60,Number(g.total)||0)),
+      used:Array.isArray(g.used)?g.used.slice(0,60).map(v=>String(v).slice(0,100)):[],
+      unplaced:Array.isArray(g.unplaced)?g.unplaced.slice(0,60).map(v=>String(v).slice(0,100)):[],
+      crosses:Number.isInteger(g.crosses)?g.crosses:0,
+      seed:Number.isInteger(g.seed)?g.seed>>>0:0,
+      attempts:Number.isInteger(g.attempts)?g.attempts:0,
+      edited:Boolean(g.edited)};
+  }
+  return draft;
 }
 export function putCell(draft,r,c,value) {
   const rows=draft.grid.length, cols=[...draft.grid[0]].length;
@@ -69,11 +81,12 @@ export function putCell(draft,r,c,value) {
   const letter = value === '' ? EMPTY : cleanCell(value);
   const grid = draft.grid.slice(), line = [...grid[r]];
   line[c]=letter;grid[r]=line.join('');
-  return {...draft,grid};
+  return draft.generation?{...draft,grid,generation:{...draft.generation,edited:true}}:{...draft,grid};
 }
 export function putClue(draft,slotId,clue) {
   if (!/^[AD]:\d+,\d+$/.test(slotId)) throw new Error('不正なカギ番号です。');
-  return {...draft,clues:{...draft.clues,[slotId]:String(clue).slice(0,500)}};
+  const clues={...draft.clues,[slotId]:String(clue).slice(0,500)};
+  return draft.generation?{...draft,clues,generation:{...draft.generation,edited:true}}:{...draft,clues};
 }
 export function toPuzzle(draft) {
   const {slots,numbers,height,width}=extractSlots(draft.grid);

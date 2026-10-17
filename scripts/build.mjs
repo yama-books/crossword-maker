@@ -24,7 +24,7 @@ if (process.argv.includes('--sync')) {
   mkdirSync(resolve(root,'dist'),{recursive:true});
   writeFileSync(resolve(root,'dist/index.html'),html);
   for (const path of ['editor.html','puzzle.json',
-      'src/editor/app.mjs','src/editor/model.mjs',
+      'src/editor/app.mjs','src/editor/model.mjs','src/generator/words.mjs',
       'src/core/kana.mjs','src/core/puzzle.mjs']) {
     const target=resolve(root,'dist',path);
     mkdirSync(resolve(target,'..'),{recursive:true});

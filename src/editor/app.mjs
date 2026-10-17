@@ -1,8 +1,22 @@
 import {normalizeKana} from '../core/kana.mjs';
+import {parseWordList,generateWordLayout} from '../generator/words.mjs';
 import {createDraft,fromPuzzle,normalizeDraft,putCell,putClue,toPuzzle,inspectDraft,EMPTY} from './model.mjs';
 
 const $=id=>document.getElementById(id);
 const STORAGE='jp-crossword-maker-draft-m2';
+const SAMPLE_WORDS=[
+ '図書館 | としょかん | 本を読んだり借りたりする場所',
+ '学校 | がっこう | 勉強する場所',
+ '教室 | きょうしつ | 授業を受ける部屋',
+ '先生 | せんせい | 生徒に教える人',
+ 'かばん | 荷物を入れるもの',
+ 'りんご | 赤い果物',
+ 'みかん | 冬によく食べる果物',
+ 'ことば | 気持ちを伝えるためのもの',
+ 'てんき | 晴れや雨などの空のようす',
+ 'とけい | 時刻を知らせる道具',
+ 'こくご | 日本語を学ぶ教科'
+].join('\n');
 const motions=['cw-slide','cw-mask','cw-pixel','cw-shape','cw-liquid','cw-wave'];
 let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
 let composing=false, lastMotion=-1;
@@ -58,7 +72,9 @@ function moveSelection(r,c,focusCell=false){
 function setLetter(raw){
  if(!selected)return;
  const {r,c}=selected;
- const text=normalizeKana(String(raw||''));
+ let text='';
+ try{if(raw)text=normalizeKana(String(raw),{strict:true});}
+ catch{say('ひらがな・カタカナ1文字を入力してください。');return false;}
  if(raw && text.length!==1){say('1マスにつき、カナ1文字を入力してください。');return false;}
  const next=putCell(draft,r,c,text||EMPTY);
  commit(next);
@@ -107,6 +123,20 @@ function render(){
  $('no-adjacent').checked=draft.rules.forbidAdjacentBlacks;
  $('undo').disabled=undoStack.length===0;$('redo').disabled=redoStack.length===0;
  $('export-puzzle').disabled=!review.ok;
+ const report=$('word-result'),unplaced=$('unplaced-words');
+ unplaced.replaceChildren();
+ const generation=draft.generation;
+ report.hidden=!generation;
+ if(generation){
+  report.classList.toggle('warning',generation.unplaced.length>0||!review.ok);
+  report.textContent='前回の配置案：'+generation.used.length+' / '+generation.total+
+    '語、交差'+generation.crosses+'マス。'+
+    (generation.edited?' 編集後の配置数は再計算していません。':'')+
+    (review.ok?' 完成問題として出力可能です。':' 未完成のため盤面チェックも確認してください。');
+  for(const word of generation.unplaced){
+   const li=document.createElement('li');li.textContent=word;unplaced.append(li);
+  }
+ }
  $('size-label').textContent=cols+' × '+rows+' マス';
  $('stats').textContent='白マス '+review.whiteCount+' / 未入力 '+review.blanks+' / 解答枠 '+review.slotCount;
  const validation=$('validation');
@@ -150,6 +180,53 @@ function render(){
   for(const slot of slots)target.append(makeClueRow(slot));
  }
 }
+$('word-source').value=draft.generation?.source||'';
+$('word-sample').addEventListener('click',()=>{
+ if($('word-source').value.trim() &&
+    !window.confirm('入力中の単語リストを例に置き換えますか？'))return;
+ $('word-source').value=SAMPLE_WORDS;
+ say('例の単語を入力しました。盤面を選んで配置案を生成できます。');
+});
+$('generate-words').addEventListener('click',async()=>{
+ const button=$('generate-words'),source=$('word-source').value;
+ const parsed=parseWordList(source);
+ if(parsed.errors.length){
+  const report=$('word-result');report.hidden=false;
+  report.classList.add('warning');
+  report.textContent=parsed.errors.slice(0,5).join(' / ')+
+    (parsed.errors.length>5?' 他'+(parsed.errors.length-5)+'件':'');
+  say('単語の読みやカギを修正してください。');
+  return;
+ }
+ if(!window.confirm('現在の盤面を配置案で置き換えますか？ Undoで戻せます。'))return;
+ button.disabled=true;
+ button.setAttribute('aria-busy','true');
+ button.textContent='配置を探索中…';
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ try{
+  const rows=Number($('rows').value),cols=Number($('cols').value);
+  const result=generateWordLayout(parsed.entries,rows,cols);
+  if(!result.placed.length){
+   say('この盤面サイズでは配置できませんでした。サイズや単語を調整してください。');return;
+  }
+  const metadata={kind:'words-first',source,total:parsed.entries.length,
+   used:result.placed.map(w=>w.display),
+   unplaced:result.unplaced.map(w=>w.display+'（'+w.value+'）'),
+   crosses:result.crosses,attempts:result.attempts,seed:result.seed,edited:false};
+  selected={r:0,c:0};
+  const next={...createDraft(rows,cols),title:draft.title,
+    rules:{...draft.rules},grid:result.grid,
+    clues:result.clues,generation:metadata};
+  commit(next,{motion:true});
+  say('配置案を作成しました。'+result.placed.length+'語を配置、未配置'+
+    result.unplaced.length+'語。完成問題にするには盤面チェックを確認してください。');
+ }catch(e){say('配置案の生成に失敗しました：'+e.message);}
+ finally{
+  button.disabled=false;
+  button.removeAttribute('aria-busy');
+  button.textContent='✦ 配置案をつくる';
+ }
+});
 $('tool-letter').addEventListener('click',()=>setTool('letter'));
 $('tool-black').addEventListener('click',()=>setTool('black'));
 $('new').addEventListener('click',()=>{
@@ -179,12 +256,12 @@ $('cell-entry').addEventListener('compositionstart',()=>{composing=true;});
 $('cell-entry').addEventListener('compositionend',()=>{
  composing=false;
  const value=$('cell-entry').value;
- if(setLetter(value))$('cell-entry').value='';
+ if(value && setLetter(value))$('cell-entry').value='';
 });
 $('cell-entry').addEventListener('input',()=>{
  if(composing)return;
  const value=$('cell-entry').value;
- if(setLetter(value))$('cell-entry').value='';
+ if(value && setLetter(value))$('cell-entry').value='';
 });
 $('board').addEventListener('keydown',event=>{
  const cell=event.target.closest('.cell');if(!cell)return;
