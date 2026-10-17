@@ -8,14 +8,14 @@ import {normalizeKana} from '../src/core/kana.mjs';
 const approvedPath = fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
 const approved=parseTsv(readFileSync(approvedPath,'utf8'));
 
-test('300 editorially checked words pass lexical structural checks',()=>{
+test('560 editorially checked words pass lexical structural checks',()=>{
  const check=checkFiles();
- assert.equal(check.candidates.count,300);
- assert.equal(check.approved.count,300);
+ assert.equal(check.candidates.count,560);
+ assert.equal(check.approved.count,560);
  assert.deepEqual(check.errors,[]);
- assert.equal(Object.keys(check.approved.byCategory).length,15);
+ assert.equal(Object.keys(check.approved.byCategory).length,28);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
- assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),285);
+ assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),519);
  assert.ok(approved.every(word=>word.review_status==='editor_checked'));
 });
 test('small kana expansion agrees with shared M1 function',()=>{
