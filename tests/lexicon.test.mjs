@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {parseTsv,validateRecords,checkFiles} from '../scripts/check-lexicon.mjs';
+import {parseTsv,validateRecords,checkFiles,selectOneCluePerAnswer,toLegacyWordList} from '../scripts/check-lexicon.mjs';
+import {parseWordList} from '../src/generator/words.mjs';
 import {normalizeKana} from '../src/core/kana.mjs';
 
 const approvedPath = fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
@@ -12,6 +13,8 @@ test('1300 editorially checked words pass lexical structural checks',()=>{
  const check=checkFiles();
  assert.equal(check.candidates.count,1300);
  assert.equal(check.approved.count,1300);
+ assert.equal(check.approved.uniqueAnswers,1298);
+ assert.deepEqual(Object.keys(check.approved.homonymGroups).sort(),['カシ','ヒヨウシ']);
  assert.deepEqual(check.errors,[]);
  assert.equal(Object.keys(check.approved.byCategory).length,65);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
@@ -24,10 +27,10 @@ test('small kana expansion agrees with shared M1 function',()=>{
  assert.equal(row.normalized,'ガツコウ');
  assert.equal(normalizeKana('ふぁすなー',{strict:true}),'フアスナー');
 });
-test('lexicon validator rejects duplicate answers and clue leakage',()=>{
+test('lexicon validator rejects repeated identical senses and clue leakage',()=>{
  const duplicate={...approved[0],id:'LEX-9999'};
  const dup=validateRecords([...approved,duplicate],{approved:true});
- assert.ok(dup.errors.some(message=>message.includes('duplicate normalized')));
+ assert.ok(dup.errors.some(message=>message.includes('duplicate answer/surface/clue')));
  const leaking={...approved[0],clue:approved[0].clue+' '+approved[0].surface};
  const checked=validateRecords([leaking],{approved:true});
  assert.ok(checked.errors.some(message=>message.includes('direct surface')));
@@ -44,11 +47,30 @@ test('normalization rejects ambiguous homophones and one-cell words',()=>{
   assert.ok(validateRecords([invalid],{approved:true}).errors.length>0);
 });
 
-test('priority words resolve small-kana homophone collisions',()=>{
-  const byAnswer=new Map(approved.map(word=>[word.normalized,word.surface]));
-  assert.equal(byAnswer.get(normalizeKana('かし',{strict:true})),'歌詞');
-  assert.equal(byAnswer.get(normalizeKana('ひょうし',{strict:true})),'表紙');
-  assert.equal(byAnswer.get(normalizeKana('さかき',{strict:true})),'榊');
-  assert.ok(!approved.some(word=>word.surface==='拍子'));
-  assert.ok(!approved.some(word=>word.surface==='かし'));
+test('homonyms keep both their distinct definitions and difficulty',()=>{
+  const groups=Map.groupBy(approved,row=>row.normalized);
+  assert.deepEqual(groups.get('カシ').map(row=>[row.surface,row.difficulty]).sort((a,b)=>a[0].localeCompare(b[0])),[['樫','2'],['歌詞','1']].sort((a,b)=>a[0].localeCompare(b[0])));
+  assert.deepEqual(new Set(groups.get('ヒヨウシ').map(row=>row.surface)),new Set(['表紙','拍子']));
+  const differentClue={...approved.find(row=>row.surface==='歌詞'),id:'LEX-9999',clue:'旋律に合わせて声に出す文章'};
+  const validation=validateRecords([...approved,differentClue],{approved:true});
+  assert.deepEqual(validation.errors,[]);
+  assert.equal(validation.uniqueAnswers,1298);
+});
+test('one unique answer per generated puzzle, with an easy/hard clue variant',()=>{
+  const easy=selectOneCluePerAnswer(approved,{difficulty:1});
+  const harder=selectOneCluePerAnswer(approved,{difficulty:2});
+  assert.equal(easy.length,1298);
+  assert.equal(harder.length,1298);
+  assert.equal(new Set(easy.map(row=>row.normalized)).size,easy.length);
+  assert.equal(new Set(harder.map(row=>row.normalized)).size,harder.length);
+  assert.equal(easy.find(row=>row.normalized==='カシ').surface,'歌詞');
+  assert.equal(harder.find(row=>row.normalized==='カシ').surface,'樫');
+  assert.equal(easy.find(row=>row.normalized==='ヒヨウシ').surface,'表紙');
+  assert.equal(harder.find(row=>row.normalized==='ヒヨウシ').surface,'拍子');
+  assert.throws(()=>selectOneCluePerAnswer(approved,{difficulty:0}),RangeError);
+  const kashiAndHyoshi=approved.filter(row=>['カシ','ヒヨウシ'].includes(row.normalized));
+  const parsed=parseWordList(toLegacyWordList(kashiAndHyoshi,{difficulty:2}));
+  assert.deepEqual(parsed.errors,[]);
+  assert.deepEqual(new Set(parsed.entries.map(row=>row.value)),new Set(['カシ','ヒヨウシ']));
+  assert.equal(parsed.entries.find(row=>row.value==='カシ').display,'樫');
 });

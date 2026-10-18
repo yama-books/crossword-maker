@@ -18,7 +18,7 @@ export function parseTsv(text) {
   });
 }
 export function validateRecords(rows,{approved=false}={}) {
-  const errors=[],ids=new Set(),words=new Set(),byCategory={},byLength={};
+  const errors=[],ids=new Set(),senses=new Set(),answerGroups=new Map(),byCategory={},byLength={};
   for (const [idx,row] of rows.entries()) {
     const where='line '+(idx+2)+' '+row.id;
     if(!/^LEX-\d{4,}$/u.test(row.id)||ids.has(row.id))errors.push(where+': missing/duplicate ID');
@@ -30,8 +30,13 @@ export function validateRecords(rows,{approved=false}={}) {
     if(row.normalized!==expected||!isValid.test(row.normalized))errors.push(where+': normalization mismatch');
     if(count(row.normalized)<2||count(row.normalized)>15||/^[ンー]/u.test(row.normalized))errors.push(where+': invalid crossword answer');
     if(Number(row.length)!==count(row.normalized)||!String(row.length).match(/^\d+$/u))errors.push(where+': length mismatch');
-    if(words.has(row.normalized))errors.push(where+': duplicate normalized reading '+row.normalized);
-    words.add(row.normalized);
+    // Multiple meanings or clues may share a crossword answer. Only a truly
+    // repeated sense+clue is invalid; one cell answer must still be deduplicated.
+    const senseKey=[row.normalized,row.surface,row.clue].join('\u0000');
+    if(senses.has(senseKey))errors.push(where+': duplicate answer/surface/clue '+row.normalized);
+    senses.add(senseKey);
+    if(!answerGroups.has(row.normalized))answerGroups.set(row.normalized,[]);
+    answerGroups.get(row.normalized).push(row);
     if(!['1','2','3'].includes(row.difficulty))errors.push(where+': invalid difficulty');
     if(!statuses.has(row.review_status)||(approved&&row.review_status==='candidate')||(!approved&&row.review_status!=='candidate'))errors.push(where+': invalid review status');
     if(row.surface.length>1&&row.clue.includes(row.surface))errors.push(where+': direct surface in clue');
@@ -40,17 +45,44 @@ export function validateRecords(rows,{approved=false}={}) {
     byCategory[row.category]=(byCategory[row.category]??0)+1;
     byLength[row.length]=(byLength[row.length]??0)+1;
   }
-  return {errors,count:rows.length,byCategory,byLength};
+  const homonymGroups=Object.fromEntries(
+    [...answerGroups].filter(([,entries])=>entries.length>1)
+      .map(([answer,entries])=>[answer,entries.map(({id,surface,difficulty})=>({id,surface,difficulty}))]));
+  return {errors,count:rows.length,uniqueAnswers:answerGroups.size,homonymGroups,byCategory,byLength};
+}
+
+/**
+ * Convert meaning/clue records to one selectable answer per crossword.
+ * Does not discard lexicon senses: it only chooses which clue a puzzle uses.
+ * Within a shared answer, choose the sense closest to the requested difficulty;
+ * ties keep the earlier (stable ID-ordered) row.
+ */
+export function selectOneCluePerAnswer(rows,{difficulty=1}={}) {
+  const target=Number(difficulty);
+  if(![1,2,3].includes(target))throw new RangeError('difficulty must be 1, 2 or 3');
+  const chosen=new Map();
+  for(const row of rows){
+    const previous=chosen.get(row.normalized);
+    if(!previous || Math.abs(Number(row.difficulty)-target)<Math.abs(Number(previous.difficulty)-target)){
+      chosen.set(row.normalized,row);
+    }
+  }
+  return [...chosen.values()];
+}
+/** Compatible with M3a's "display | reading | clue" word list. */
+export function toLegacyWordList(rows,options={}) {
+  return selectOneCluePerAnswer(rows,options)
+    .map(({surface,reading,clue})=>[surface,reading,clue].join(' | ')).join('\n');
 }
 export function checkFiles() {
   const base = fileURLToPath(new URL('../data/lexicon/',import.meta.url));
   const candidates = parseTsv(readFileSync(resolve(base,'seed_candidates.tsv'),'utf8'));
   const approved = parseTsv(readFileSync(resolve(base,'approved_lexicon.tsv'),'utf8'));
   const a=validateRecords(candidates),b=validateRecords(approved,{approved:true});
-  const ids=new Set(candidates.map(row=>row.id));
-  for(const row of approved)if(!ids.has(row.id))b.errors.push('approved ID absent in candidates: '+row.id);
+  const candidatesById=new Map(candidates.map(row=>[row.id,row]));
+  for(const row of approved)if(!candidatesById.has(row.id))b.errors.push('approved ID absent in candidates: '+row.id);
   for(const row of approved){
-    const candidate=candidates.find(c=>c.id===row.id);
+    const candidate=candidatesById.get(row.id);
     if(candidate){
       for(const key of COLS.filter(k=>k!=='review_status')){
         if(candidate[key]!==row[key])b.errors.push('approved mismatch '+row.id+': '+key);
@@ -61,6 +93,6 @@ export function checkFiles() {
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const r=checkFiles();
-  console.log(JSON.stringify({candidateCount:r.candidates.count,approvedCount:r.approved.count,categories:r.approved.byCategory,lengths:r.approved.byLength,errors:r.errors},null,2));
+  console.log(JSON.stringify({candidateCount:r.candidates.count,approvedCount:r.approved.count,uniqueAnswers:r.approved.uniqueAnswers,homonymGroups:r.approved.homonymGroups,categories:r.approved.byCategory,lengths:r.approved.byLength,errors:r.errors},null,2));
   if(r.errors.length)process.exitCode=1;
 }
