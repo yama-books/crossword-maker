@@ -9,18 +9,18 @@ import {normalizeKana} from '../src/core/kana.mjs';
 const approvedPath = fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
 const approved=parseTsv(readFileSync(approvedPath,'utf8'));
 
-test('1500 editorially checked meanings pass lexical structural checks',()=>{
+test('1700 editorially checked meanings pass lexical structural checks',()=>{
  const check=checkFiles();
- assert.equal(check.candidates.count,1500);
- assert.equal(check.approved.count,1500);
- assert.equal(check.approved.uniqueAnswers,1474);
- assert.equal(Object.keys(check.approved.homonymGroups).length,25);
+ assert.equal(check.candidates.count,1700);
+ assert.equal(check.approved.count,1700);
+ assert.equal(check.approved.uniqueAnswers,1655);
+ assert.equal(Object.keys(check.approved.homonymGroups).length,40);
  for(const answer of ['カシ','ヒヨウシ','ハシ','ツル','スイセイ'])
    assert.ok(check.approved.homonymGroups[answer]);
  assert.deepEqual(check.errors,[]);
- assert.equal(Object.keys(check.approved.byCategory).length,75);
+ assert.equal(Object.keys(check.approved.byCategory).length,85);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
- assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1361);
+ assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1546);
  assert.ok(approved.every(word=>word.review_status==='editor_checked'));
 });
 test('small kana expansion agrees with shared M1 function',()=>{
@@ -58,13 +58,13 @@ test('homonyms keep both their distinct definitions and difficulty',()=>{
   const differentClue={...approved.find(row=>row.surface==='歌詞'),id:'LEX-9999',clue:'旋律に合わせて声に出す文章'};
   const validation=validateRecords([...approved,differentClue],{approved:true});
   assert.deepEqual(validation.errors,[]);
-  assert.equal(validation.uniqueAnswers,1474);
+  assert.equal(validation.uniqueAnswers,1655);
 });
 test('one unique answer per generated puzzle, with an easy/hard clue variant',()=>{
   const easy=selectOneCluePerAnswer(approved,{difficulty:1});
   const harder=selectOneCluePerAnswer(approved,{difficulty:2});
-  assert.equal(easy.length,1474);
-  assert.equal(harder.length,1474);
+  assert.equal(easy.length,1655);
+  assert.equal(harder.length,1655);
   assert.equal(new Set(easy.map(row=>row.normalized)).size,easy.length);
   assert.equal(new Set(harder.map(row=>row.normalized)).size,harder.length);
   assert.equal(easy.find(row=>row.normalized==='カシ').surface,'歌詞');
@@ -106,4 +106,19 @@ test('homonyms may share answer and surface when their explanations differ',()=>
  const birds=selectOneCluePerAnswer(approved,{category:'野山の生き物'});
  assert.equal(plants.find(x=>x.normalized==='ツル').category,'植物のしくみ');
  assert.equal(birds.find(x=>x.normalized==='ツル').category,'野山の生き物');
+});
+
+test('expanded sense clusters survive genre selection',()=>{
+ const byAnswer=Map.groupBy(approved,row=>row.normalized);
+ assert.deepEqual(new Set(byAnswer.get('キル').map(row=>row.surface)),new Set(['着る','切る']));
+ assert.deepEqual(new Set(byAnswer.get('ハク').map(row=>row.surface)),new Set(['履く','掃く','吐く']));
+ assert.deepEqual(new Set(byAnswer.get('イシ').map(row=>row.surface)),new Set(['石','意思','医師']));
+ assert.deepEqual(new Set(byAnswer.get('シリヨウ').map(row=>row.surface)),new Set(['資料','史料']));
+ assert.deepEqual(new Set(byAnswer.get('シヨウセツ').map(row=>row.surface)),new Set(['小説','小雪']));
+ const history=selectOneCluePerAnswer(approved,{category:'歴史と建築',difficulty:2});
+ const seasonal=selectOneCluePerAnswer(approved,{category:'二十四節気',difficulty:3});
+ assert.equal(history.find(row=>row.normalized==='シリヨウ').surface,'史料');
+ assert.equal(seasonal.find(row=>row.normalized==='シヨウセツ').surface,'小雪');
+ assert.equal(seasonal.length,20);
+ assert.equal(new Set(seasonal.map(row=>row.normalized)).size,20);
 });
