@@ -37,7 +37,7 @@ test('lexicon validator rejects repeated identical senses and clue leakage',()=>
 });
 
 
-test('normalization rejects ambiguous homophones and one-cell words',()=>{
+test('one-cell words are invalid and legacy normalized spellings stay stable',()=>{
   const map = new Map(approved.map(row=>[row.normalized,row.surface]));
   assert.equal(map.get(normalizeKana('びよういん',{strict:true})),'病院');
   assert.equal(map.get(normalizeKana('まつ',{strict:true})),'松');
@@ -73,4 +73,22 @@ test('one unique answer per generated puzzle, with an easy/hard clue variant',()
   assert.deepEqual(parsed.errors,[]);
   assert.deepEqual(new Set(parsed.entries.map(row=>row.value)),new Set(['カシ','ヒヨウシ']));
   assert.equal(parsed.entries.find(row=>row.value==='カシ').display,'樫');
+  // Genre filtering selects the appropriate meaning regardless of difficulty.
+  const trees=selectOneCluePerAnswer(approved,{difficulty:1,category:'木の種類'});
+  const music=selectOneCluePerAnswer(approved,{difficulty:2,category:'音楽のことば'});
+  const books=selectOneCluePerAnswer(approved,{category:'本と美術'});
+  assert.equal(trees.find(row=>row.normalized==='カシ').surface,'樫');
+  assert.equal(music.find(row=>row.normalized==='カシ').surface,'歌詞');
+  assert.equal(music.find(row=>row.normalized==='ヒヨウシ').surface,'拍子');
+  assert.equal(books.find(row=>row.normalized==='ヒヨウシ').surface,'表紙');
+  assert.ok(trees.every(row=>row.category==='木の種類'));
+  assert.ok(music.every(row=>row.category==='音楽のことば'));
+  assert.ok(books.every(row=>row.category==='本と美術'));
+  const mixed=selectOneCluePerAnswer(approved,{category:['木の種類','音楽のことば'],difficulty:2});
+  assert.equal(mixed.find(row=>row.normalized==='カシ').surface,'樫');
+  assert.equal(new Set(mixed.map(row=>row.normalized)).size,mixed.length);
+  assert.throws(()=>selectOneCluePerAnswer(approved,{category:[]}),TypeError);
+  const musicParsed=parseWordList(toLegacyWordList(approved.filter(row=>['カシ','ヒヨウシ'].includes(row.normalized)),{category:'音楽のことば'}));
+  assert.deepEqual(musicParsed.errors,[]);
+  assert.deepEqual(new Set(musicParsed.entries.map(row=>row.display)),new Set(['歌詞','拍子']));
 });

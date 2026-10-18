@@ -54,14 +54,20 @@ export function validateRecords(rows,{approved=false}={}) {
 /**
  * Convert meaning/clue records to one selectable answer per crossword.
  * Does not discard lexicon senses: it only chooses which clue a puzzle uses.
+ * Optionally filter by category or a list of categories before selection.
  * Within a shared answer, choose the sense closest to the requested difficulty;
  * ties keep the earlier (stable ID-ordered) row.
  */
-export function selectOneCluePerAnswer(rows,{difficulty=1}={}) {
+export function selectOneCluePerAnswer(rows,{difficulty=1,category=null}={}) {
   const target=Number(difficulty);
   if(![1,2,3].includes(target))throw new RangeError('difficulty must be 1, 2 or 3');
+  const categoryList=category===null?null:(Array.isArray(category)?category:[category]);
+  if(categoryList!==null && (!categoryList.length || categoryList.some(x=>typeof x!=='string'||!x.trim())))
+    throw new TypeError('category must be a nonempty string or array of strings');
+  const allowed=categoryList===null?null:new Set(categoryList);
   const chosen=new Map();
   for(const row of rows){
+    if(allowed!==null && !allowed.has(row.category))continue;
     const previous=chosen.get(row.normalized);
     if(!previous || Math.abs(Number(row.difficulty)-target)<Math.abs(Number(previous.difficulty)-target)){
       chosen.set(row.normalized,row);
