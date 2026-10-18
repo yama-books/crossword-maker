@@ -86,7 +86,7 @@ LEX-0084	根っこ	ねっこ	ネツコ	3	植物が地面の中へ伸ばし、水
 LEX-0085	種	たね	タネ	2	まくと芽が出て、新しい植物が育つもと	植物	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0086	小麦	こむぎ	コムギ	3	粉にして麺や焼き菓子などを作る穀物	植物	2	original_editorial_curation_2026-10-17	editor_checked
 LEX-0087	桜	さくら	サクラ	3	花見の代表的な木。春に淡い桃色の花が枝いっぱいに咲く	植物	1	original_editorial_curation_2026-10-17	editor_checked
-LEX-0088	梅	うめ	ウメ	2	早春に香る花を咲かせ、酸っぱい実を梅干しに利用する木	植物	1	original_editorial_curation_2026-10-17	editor_checked
+LEX-0088	梅	うめ	ウメ	2	早春に香る花を咲かせ、酸っぱい実は塩漬けにして食べる木	植物	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0089	ひまわり	ひまわり	ヒマワリ	4	夏に大きな黄色い花を咲かせる植物	植物	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0090	朝顔	あさがお	アサガオ	4	夏の朝にラッパ形の花を咲かせるつる植物	植物	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0091	たんぽぽ	たんぽぽ	タンポポ	4	黄色い花が咲いた後、綿毛の種を飛ばす草	植物	1	original_editorial_curation_2026-10-17	editor_checked
@@ -103,7 +103,7 @@ LEX-0101	山	やま	ヤマ	2	地面が高く盛り上がった地形	自然と�
 LEX-0102	川	かわ	カワ	2	水が上流から下流へ流れる場所	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0103	海	うみ	ウミ	2	広くつながった、塩辛い水がある場所	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0104	池	いけ	イケ	2	庭園や公園でコイを飼うためにも造られる、陸に囲まれた小さな水域	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
-LEX-0105	湖	みずうみ	ミズウミ	4	琵琶湖や十和田湖のように、陸地に囲まれた広い水域	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
+LEX-0105	湖	みずうみ	ミズウミ	4	琵琶や十和田などの名で知られ、陸地に囲まれた広い水域	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0106	谷	たに	タニ	2	山と山の間の低くなった場所	自然と地形	2	original_editorial_curation_2026-10-17	editor_checked
 LEX-0107	丘	おか	オカ	2	周りより少し高くなった、なだらかな土地	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
 LEX-0108	島	しま	シマ	2	四方を水に囲まれた陸地	自然と地形	1	original_editorial_curation_2026-10-17	editor_checked
