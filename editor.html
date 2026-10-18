@@ -85,45 +85,63 @@ button{cursor:pointer;touch-action:manipulation}
 .motion-controls .motion-choice{font-size:11px;color:var(--muted);font-weight:750;display:grid;gap:4px}
 .motion-controls select{font-size:12px;min-height:40px;max-width:200px;padding:7px 9px;background:#f5f8f4;border:1px solid #bfd4c5;border-radius:8px}
 .motion-caption{font-size:11px;color:#4b7762;font-weight:750;text-align:center;min-height:18px;margin:11px 0 0}
-.board{position:relative;isolation:isolate}
+.board-stage{position:relative;width:min(100%,470px);min-width:0;isolation:isolate}
+.board-stage .board{width:100%;position:relative}
+.board{isolation:isolate}
 .board.motion[data-motion] .cell{animation:var(--motion) .4s cubic-bezier(.18,.75,.26,1) both;animation-delay:var(--delay,0ms)}
 .board.motion[data-motion="checker"] .cell{animation-timing-function:steps(4,end)}
 .board.motion[data-motion="pixel"] .cell{animation-timing-function:steps(5,end)}
 @keyframes cw-diagonal{0%{opacity:0;transform:translate(-15px,-12px) scale(.78)}75%{opacity:1;transform:translate(1px,1px) scale(1.02)}100%{opacity:1;transform:none}}
 @keyframes cw-checker{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
-@keyframes cw-center-y{from{clip-path:inset(50% 0 50% 0)}to{clip-path:inset(0 0 0 0)}}
-@keyframes cw-center-x{from{clip-path:inset(0 50% 0 50%)}to{clip-path:inset(0 0 0 0)}}
-@keyframes cw-iris{from{clip-path:circle(0% at center)}to{clip-path:circle(72% at center)}}
-@keyframes cw-top-rise{from{transform:translateY(21px)}to{transform:none}}
-@keyframes cw-bottom-drop{from{transform:translateY(-21px)}to{transform:none}}
-@keyframes cw-left-rise{from{transform:translateX(19px)}to{transform:none}}
-@keyframes cw-right-slide{from{transform:translateX(-19px)}to{transform:none}}
-@keyframes cw-center-rule{0%{transform:scaleX(0);opacity:0}12%{opacity:1}50%{transform:scaleX(1);opacity:1}90%{opacity:1}100%{transform:scaleX(0);opacity:0}}
-@keyframes cw-side-rule{0%{transform:scaleY(0);opacity:0}12%{opacity:1}50%{transform:scaleY(1);opacity:1}90%{opacity:1}100%{transform:scaleY(0);opacity:0}}
-.board.motion[data-motion="center-y"]{animation:cw-center-y .72s cubic-bezier(.2,.75,.25,1) both}
-.board.motion[data-motion="center-x"]{animation:cw-center-x .72s cubic-bezier(.2,.75,.25,1) both}
-.board.motion[data-motion="iris"]{animation:cw-iris .7s cubic-bezier(.2,.75,.25,1) both}
-.board.motion:is([data-motion="center-y"],[data-motion="center-x"],[data-motion="iris"]) .cell{animation:none}
-.board.motion[data-motion="center-y"] .cell[data-half="top"]{animation:cw-top-rise .72s cubic-bezier(.17,.9,.24,1) both}
-.board.motion[data-motion="center-y"] .cell[data-half="bottom"]{animation:cw-bottom-drop .72s cubic-bezier(.17,.9,.24,1) both}
-.board.motion[data-motion="center-x"] .cell[data-side="left"]{animation:cw-left-rise .72s cubic-bezier(.17,.9,.24,1) both}
-.board.motion[data-motion="center-x"] .cell[data-side="right"]{animation:cw-right-slide .72s cubic-bezier(.17,.9,.24,1) both}
-.board.motion[data-motion="center-y"]::after,.board.motion[data-motion="center-x"]::after{
- content:"";position:absolute;z-index:6;pointer-events:none;
- background:#d7a361;box-shadow:0 0 0 1px #a77843aa
+/* Symmetric full-board reveals: clip the entire grid as one rigid picture.
+   Never translate rows/cells independently, which breaks alignment and looks uneven.
+   The dividing line belongs to the UNCLIPPED board-stage, not the clipped board. */
+@keyframes cw-center-y{
+  0%,12%{clip-path:inset(50% 0 50% 0)}
+  100%{clip-path:inset(0 0 0 0)}
 }
-.board.motion[data-motion="center-y"]::after{height:4px;width:84%;left:8%;top:calc(50% - 2px);
- animation:cw-center-rule .72s ease-in-out both}
-.board.motion[data-motion="center-x"]::after{width:4px;height:84%;top:8%;left:calc(50% - 2px);
- animation:cw-side-rule .72s ease-in-out both}
+@keyframes cw-center-x{
+  0%,12%{clip-path:inset(0 50% 0 50%)}
+  100%{clip-path:inset(0 0 0 0)}
+}
+@keyframes cw-iris{from{clip-path:circle(0% at center)}to{clip-path:circle(72% at center)}}
+@keyframes cw-center-rule{
+  0%{transform:scaleX(0);opacity:0}
+  18%{transform:scaleX(1);opacity:1}
+  72%{transform:scaleX(1);opacity:1}
+  100%{transform:scaleX(1);opacity:0}
+}
+@keyframes cw-side-rule{
+  0%{transform:scaleY(0);opacity:0}
+  18%{transform:scaleY(1);opacity:1}
+  72%{transform:scaleY(1);opacity:1}
+  100%{transform:scaleY(1);opacity:0}
+}
+.board.motion[data-motion="center-y"]{animation:cw-center-y .7s cubic-bezier(.22,.75,.28,1) both}
+.board.motion[data-motion="center-x"]{animation:cw-center-x .7s cubic-bezier(.22,.75,.28,1) both}
+.board.motion[data-motion="iris"]{animation:cw-iris .7s cubic-bezier(.22,.75,.28,1) both}
+.board.motion:is([data-motion="center-y"],[data-motion="center-x"],[data-motion="iris"]) .cell{animation:none}
+.board-stage[data-reveal="center-y"]::after,
+.board-stage[data-reveal="center-x"]::after{
+  content:"";position:absolute;z-index:6;pointer-events:none;
+  background:#d7a361;opacity:0
+}
+.board-stage[data-reveal="center-y"]::after{
+  height:3px;left:5%;width:90%;top:calc(50% - 1.5px);
+  transform-origin:center;animation:cw-center-rule .7s ease-in-out both
+}
+.board-stage[data-reveal="center-x"]::after{
+  width:3px;top:5%;height:90%;left:calc(50% - 1.5px);
+  transform-origin:center;animation:cw-side-rule .7s ease-in-out both
+}
 @keyframes cw-notice-enter{from{opacity:.6;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes cw-notice-nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}60%{transform:translateX(3px)}}
 #message{min-height:18px}
 #message.notice-pop{animation:cw-notice-enter .22s ease-out both;color:#376c50;font-weight:750}
 #message.notice-warn{animation:cw-notice-nudge .19s ease-out both;color:#8f5639}
-@media(max-width:690px){.motion-controls{width:100%;justify-content:space-between}.motion-controls select{max-width:200px}}
-@media(prefers-reduced-motion:reduce){.board.motion,.board.motion .cell,.board.motion::after,#message{animation:none!important;clip-path:none!important;transform:none!important}}
-@media print{.board.motion,.board.motion .cell,.board.motion::after{animation:none!important;clip-path:none!important;transform:none!important}.motion-caption{display:none!important}}
+@media(max-width:690px){.motion-controls{width:100%;justify-content:space-between}.motion-controls select{max-width:200px}.board-stage{width:min(100%,460px)}}
+@media(prefers-reduced-motion:reduce){.board.motion,.board.motion .cell,.board-stage::after,#message{animation:none!important;clip-path:none!important;transform:none!important}.board-stage::after{display:none!important}}
+@media print{.board.motion,.board.motion .cell,.board-stage::after{animation:none!important;clip-path:none!important;transform:none!important}.board-stage::after{display:none!important}.board-stage{width:130mm}.motion-caption{display:none!important}}
 
 @media(max-width:1080px){.layout{grid-template-columns:minmax(200px,270px) 1fr}.result-panel{grid-column:1/-1}.clues{grid-template-columns:1fr 1fr}}
 @media(max-width:690px){.wrap{padding:16px 12px 40px}.layout{display:flex;flex-direction:column;gap:12px}.panel{width:100%;padding:16px}.board-panel{order:0}.tools-panel{order:1}.result-panel{order:2}.board{width:min(100%,460px)}.cell{font-size:clamp(11px,4.5vw,26px)}.clues{grid-template-columns:1fr}.topline{font-size:10px}}
@@ -202,7 +220,7 @@ button{cursor:pointer;touch-action:manipulation}
           <button class="block-btn" id="motion-preview" type="button">▶ 再生</button>
         </div>
       </div>
-      <div class="board-wrap"><div id="board" class="board" role="grid" aria-label="編集中のクロスワード"></div></div>
+      <div class="board-wrap"><div class="board-stage" id="board-stage"><div id="board" class="board" role="grid" aria-label="編集中のクロスワード"></div></div></div>
       <p class="motion-caption" id="motion-caption" role="status" aria-live="polite">演出を選んで再生できます</p>
       <div class="board-foot"><span>■ 黒マス　□ 未入力</span><span id="size-label">7 × 7</span></div>
       <div class="edit-tray">
