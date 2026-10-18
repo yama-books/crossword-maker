@@ -57,6 +57,14 @@ function orderedReviewRows(rows){
   });
   if(new Set(chosen.map(row=>row.normalized)).size!==chosen.length)
     throw new Error('Review sample accidentally repeats the same crossword answer');
+  // Shuffle fixed, so near-synonym contrasts do not prime adjacent answers.
+  // 20261020 was chosen to keep the eight critical pairs 7+ questions apart.
+  let state=20261020;
+  for(let i=chosen.length-1;i>0;i--){
+    state=(Math.imul(1664525,state)+1013904223)>>>0;
+    const j=state%(i+1);
+    [chosen[i],chosen[j]]=[chosen[j],chosen[i]];
+  }
   return chosen;
 }
 export function createReviewPack(rows,{kind='questions'}={}){
