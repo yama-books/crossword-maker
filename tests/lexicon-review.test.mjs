@@ -27,7 +27,8 @@ test('24 blind-review questions match their separate key and the canonical clues
  const keyByQ=new Map(key.map(row=>[row.question_id,row]));
  assert.equal(keyByQ.size,24);
  assert.equal(new Set(key.map(row=>row.lexicon_id)).size,24);
- assert.equal(new Set(key.map(row=>row.normalized)).size,24);
+ assert.equal(new Set(key.map(row=>row.normalized)).size,23);
+ assert.deepEqual(key.filter(row=>row.normalized==='シリヨウ').map(row=>row.surface).sort(),['史料','資料'].sort()); // Intentional same-answer clue comparison
  assert.ok(new Set(key.map(row=>row.category)).size>=8);
  for(const q of questions){
    const answer=keyByQ.get(q.question_id);
