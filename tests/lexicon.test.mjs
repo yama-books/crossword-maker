@@ -112,7 +112,7 @@ test('expanded sense clusters survive genre selection',()=>{
  const byAnswer=Map.groupBy(approved,row=>row.normalized);
  assert.deepEqual(new Set(byAnswer.get('キル').map(row=>row.surface)),new Set(['着る','切る']));
  assert.deepEqual(new Set(byAnswer.get('ハク').map(row=>row.surface)),new Set(['履く','掃く','吐く']));
- assert.deepEqual(new Set(byAnswer.get('イシ').map(row=>row.surface)),new Set(['石','意思','医師']));
+ assert.deepEqual(new Set(byAnswer.get('イシ').map(row=>row.surface)),new Set(['石','意思','医師','遺志']));
  assert.deepEqual(new Set(byAnswer.get('シリヨウ').map(row=>row.surface)),new Set(['資料','史料']));
  assert.deepEqual(new Set(byAnswer.get('シヨウセツ').map(row=>row.surface)),new Set(['小説','小雪']));
  const history=selectOneCluePerAnswer(approved,{category:'歴史と建築',difficulty:2});
