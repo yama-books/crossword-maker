@@ -10,7 +10,7 @@ const lexicon=parseTsv(readFileSync(fileURLToPath(new URL('../data/lexicon/appro
 const byId=new Map(lexicon.map(row=>[row.id,row]));
 function readTable(name,header){
  const path=fileURLToPath(new URL('../data/lexicon/review/'+name,import.meta.url));
- const lines=readFileSync(path,'utf8').trimEnd().split('\n');
+ const lines=readFileSync(path,'utf8').replace(/\r\n/g,'\n').replace(/\n$/u,'').split('\n');
  assert.equal(lines.shift(),header.join('\t'));
  return lines.map(line=>{
    const values=line.split('\t');
