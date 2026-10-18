@@ -23,6 +23,25 @@ test('app uses the shared motion planner and does not alter puzzle data to anima
  assert.ok(app.includes('requestAnimationFrame'));
  assert.ok(!app.includes('CELLS[4]'));
 });
+test('split reveal treats the board as one rigid grid and draws its line outside clipping',()=>{
+ assert.ok(html.includes('id="board-stage"'));
+ assert.match(html,/\.board-stage\[data-reveal="center-y"\]::after/);
+ assert.match(html,/\.board-stage\[data-reveal="center-x"\]::after/);
+ assert.match(html,/0%,12%\{clip-path:inset\(50% 0 50% 0\)\}/);
+ assert.match(html,/0%,12%\{clip-path:inset\(0 50% 0 50%\)\}/);
+ for(const oldMotion of ['cw-top-rise','cw-bottom-drop','cw-left-rise','cw-right-slide']){
+  assert.ok(!html.includes(oldMotion),'Old independent cell animation remains: '+oldMotion);
+ }
+ assert.ok(!app.includes('cell.dataset.half'));
+ assert.ok(!app.includes('cell.dataset.side'));
+ assert.ok(app.includes("if(chosen.group==='cells')for("));
+ assert.ok(app.includes("stage.dataset.reveal=chosen.id"));
+ assert.ok(app.includes("$('board-stage').removeAttribute('data-reveal')"));
+});
+test('reduced motion and print never clip the board or show split-guide lines',()=>{
+ assert.match(html,/@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.board-stage::after\{display:none!important\}/);
+ assert.match(html,/@media print\{\.board.motion,[\s\S]*?\.board-stage::after\{display:none!important\}/);
+});
 test('editor app and build manifest both recognize browser module',()=>{
  assert.ok(build.includes("'src/editor/motion.mjs'"));
  const check=spawnSync(process.execPath,['--check','src/editor/app.mjs'],{encoding:'utf8'});
