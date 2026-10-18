@@ -30,7 +30,7 @@ export function parseClueConflicts(text){
 const CLUE_CONFLICTS=parseClueConflicts(readFileSync(CONFLICT_PATH,'utf8'));
 
 const HELP='Usage: node scripts/export-lexicon.mjs [--category="木の種類"] [--difficulty=1] [--count=12] [--seed=1] [--min-length=2] [--max-length=8]\n'
-  +'Options: --category may be repeated or comma-separated; --help prints help.\n'
+  +'Options: --category may be repeated or comma-separated; --allow-conflicts permits editorially confusing synonyms. --help prints help.\n'
   +'Output: display | reading | clue, one per line; maximum 60 answers for M3a.\n';
 const INTEGER=/^\d+$/u;
 function integer(value,label,min,max){
@@ -40,12 +40,13 @@ function integer(value,label,min,max){
  return Number(s);
 }
 export function parseExportArgs(args){
- const settings={category:[],difficulty:1,count:12,seed:1,minLength:2,maxLength:8};
+ const settings={category:[],difficulty:1,count:12,seed:1,minLength:2,maxLength:8,allowConflicts:false};
  let help=false;
  const allowed=new Set(['category','difficulty','count','seed','min-length','max-length']);
  for(let i=0;i<args.length;i++){
    const raw=args[i];
    if(raw==='--help'||raw==='-h'){help=true;continue}
+   if(raw==='--allow-conflicts'){settings.allowConflicts=true;continue}
    if(!raw.startsWith('--'))throw new Error('Unknown argument: '+raw);
    const eq=raw.indexOf('='),key=raw.slice(2,eq<0?undefined:eq);
    if(!allowed.has(key))throw new Error('Unknown option: '+key);
@@ -82,7 +83,8 @@ function shuffleStable(items,seed){
 }
 /** Pick distinct crossword answers, retaining all source senses in the TSV. */
 export function createLexiconExport(rows,opts={}){
- const {category=null,difficulty=1,count=12,seed=1,minLength=2,maxLength=8}=opts;
+ const {category=null,difficulty=1,count=12,seed=1,minLength=2,maxLength=8,allowConflicts=false}=opts;
+ if(typeof allowConflicts!=='boolean')throw new TypeError('allowConflicts must be boolean');
  integer(difficulty,'difficulty',1,3);
  integer(count,'count',2,60);
  integer(seed,'seed',0,4294967295);
@@ -112,7 +114,7 @@ export function createLexiconExport(rows,opts={}){
  }
  const selected=[],answers=new Set();
  for(const row of shuffleStable(valid,seed)){
-   if([...(blocked.get(row.normalized)||[])].some(answer=>answers.has(answer)))continue;
+   if(!allowConflicts && [...(blocked.get(row.normalized)||[])].some(answer=>answers.has(answer)))continue;
    selected.push(row);
    answers.add(row.normalized);
    if(selected.length===count)break;
