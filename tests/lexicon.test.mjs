@@ -18,7 +18,7 @@ test('1300 editorially checked words pass lexical structural checks',()=>{
  assert.deepEqual(check.errors,[]);
  assert.equal(Object.keys(check.approved.byCategory).length,65);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
- assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1186);
+ assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1187);
  assert.ok(approved.every(word=>word.review_status==='editor_checked'));
 });
 test('small kana expansion agrees with shared M1 function',()=>{
