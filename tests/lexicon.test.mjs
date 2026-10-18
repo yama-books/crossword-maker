@@ -8,14 +8,14 @@ import {normalizeKana} from '../src/core/kana.mjs';
 const approvedPath = fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
 const approved=parseTsv(readFileSync(approvedPath,'utf8'));
 
-test('1000 editorially checked words pass lexical structural checks',()=>{
+test('1300 editorially checked words pass lexical structural checks',()=>{
  const check=checkFiles();
- assert.equal(check.candidates.count,1000);
- assert.equal(check.approved.count,1000);
+ assert.equal(check.candidates.count,1300);
+ assert.equal(check.approved.count,1300);
  assert.deepEqual(check.errors,[]);
- assert.equal(Object.keys(check.approved.byCategory).length,50);
+ assert.equal(Object.keys(check.approved.byCategory).length,65);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
- assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),910);
+ assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1186);
  assert.ok(approved.every(word=>word.review_status==='editor_checked'));
 });
 test('small kana expansion agrees with shared M1 function',()=>{
@@ -42,4 +42,13 @@ test('normalization rejects ambiguous homophones and one-cell words',()=>{
   assert.equal(map.get(normalizeKana('すいせい',{strict:true})),'水星');
   const invalid={...approved[0],id:'LEX-9001',surface:'酢',reading:'す',normalized:'ス',length:'1',clue:'料理を酸っぱくする調味料'};
   assert.ok(validateRecords([invalid],{approved:true}).errors.length>0);
+});
+
+test('priority words resolve small-kana homophone collisions',()=>{
+  const byAnswer=new Map(approved.map(word=>[word.normalized,word.surface]));
+  assert.equal(byAnswer.get(normalizeKana('かし',{strict:true})),'歌詞');
+  assert.equal(byAnswer.get(normalizeKana('ひょうし',{strict:true})),'表紙');
+  assert.equal(byAnswer.get(normalizeKana('さかき',{strict:true})),'榊');
+  assert.ok(!approved.some(word=>word.surface==='拍子'));
+  assert.ok(!approved.some(word=>word.surface==='かし'));
 });
