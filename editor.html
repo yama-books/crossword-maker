@@ -32,7 +32,7 @@ input[type=checkbox]{accent-color:var(--accent)}
 .help{font-size:12px;line-height:1.7;color:var(--muted);margin:3px 0 0}
 .soft-line{height:1px;background:#e9efea;margin:19px 0}
 button{cursor:pointer;touch-action:manipulation}
-.block-btn,.link-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:2px solid #92ac9b;background:#e7eee7;color:#315a48;padding:9px 11px;border-radius:9px;box-shadow:0 4px 0 var(--edge);font-size:12px;font-weight:800;text-decoration:none;text-align:center;transition:transform 95ms ease,box-shadow 95ms ease,border-color 95ms ease;background-image:linear-gradient(to bottom,#f2f6ee 0%,#e5eee6 100%)}
+.block-btn,.link-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:2px solid #92ac9b;background:#e7eee7;color:#315a48;padding:9px 11px;border-radius:9px;box-shadow:0 4px 0 var(--edge);font-size:12px;font-weight:800;text-decoration:none;text-align:center;transition:transform 95ms ease,box-shadow 95ms ease,border-color 95ms ease;background-image:none}
 .block-btn.primary{background:#377965;color:#fff;border-color:#2c6655;box-shadow:0 4px 0 #214f43;background-image:none}
 .block-btn:active,.link-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
 .block-btn.primary:active{box-shadow:0 1px 0 #214f43}
@@ -45,7 +45,7 @@ button{cursor:pointer;touch-action:manipulation}
 .board-header h2{margin:0}
 .board-wrap{display:flex;justify-content:center}
 .board{width:min(100%,470px);display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));border:2px solid #455c52;background:#455c52;gap:2px;border-radius:3px;overflow:hidden;touch-action:manipulation}
-.cell{position:relative;aspect-ratio:1;min-width:0;padding:0;border:0;background:#fff;display:flex;align-items:center;justify-content:center;color:#294638;border-radius:0;font-size:clamp(11px,2.1vw,26px);font-weight:800;line-height:1;user-select:none}
+.cell{transition:background-color .12s ease,box-shadow .12s ease;position:relative;aspect-ratio:1;min-width:0;padding:0;border:0;background:#fff;display:flex;align-items:center;justify-content:center;color:#294638;border-radius:0;font-size:clamp(11px,2.1vw,26px);font-weight:800;line-height:1;user-select:none}
 .cell.black{background:#43564d}
 .cell.empty{color:#bdc9bf}
 .cell.selected{z-index:1;background:#def1e5;box-shadow:inset 0 0 0 3px #d49b4a}
@@ -77,7 +77,54 @@ button{cursor:pointer;touch-action:manipulation}
 @keyframes cw-shape{from{clip-path:circle(0% at 50% 50%);opacity:.4}to{clip-path:circle(75% at 50% 50%);opacity:1}}
 @keyframes cw-liquid{0%{opacity:0;transform:scale(.66) translateY(12px);border-radius:45%}75%{border-radius:28%;transform:scale(1.06)}100%{opacity:1;transform:none;border-radius:0}}
 @keyframes cw-wave{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
-.board.motion .cell{animation:var(--motion) .4s cubic-bezier(.2,.78,.28,1) both;animation-delay:var(--delay)}
+
+/* Motion #005 inspired by Shohei Ohtaki's mask-reveal concept, MIT © 2026.
+   Original CSS adaptation for an accessible grid, not a Canvas copy.
+   https://showheyohtaki.github.io/motion-prompt/#005 */
+.motion-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.motion-controls .motion-choice{font-size:11px;color:var(--muted);font-weight:750;display:grid;gap:4px}
+.motion-controls select{font-size:12px;min-height:40px;max-width:200px;padding:7px 9px;background:#f5f8f4;border:1px solid #bfd4c5;border-radius:8px}
+.motion-caption{font-size:11px;color:#4b7762;font-weight:750;text-align:center;min-height:18px;margin:11px 0 0}
+.board{position:relative;isolation:isolate}
+.board.motion[data-motion] .cell{animation:var(--motion) .4s cubic-bezier(.18,.75,.26,1) both;animation-delay:var(--delay,0ms)}
+.board.motion[data-motion="checker"] .cell{animation-timing-function:steps(4,end)}
+.board.motion[data-motion="pixel"] .cell{animation-timing-function:steps(5,end)}
+@keyframes cw-diagonal{0%{opacity:0;transform:translate(-15px,-12px) scale(.78)}75%{opacity:1;transform:translate(1px,1px) scale(1.02)}100%{opacity:1;transform:none}}
+@keyframes cw-checker{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes cw-center-y{from{clip-path:inset(50% 0 50% 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes cw-center-x{from{clip-path:inset(0 50% 0 50%)}to{clip-path:inset(0 0 0 0)}}
+@keyframes cw-iris{from{clip-path:circle(0% at center)}to{clip-path:circle(72% at center)}}
+@keyframes cw-top-rise{from{transform:translateY(21px)}to{transform:none}}
+@keyframes cw-bottom-drop{from{transform:translateY(-21px)}to{transform:none}}
+@keyframes cw-left-rise{from{transform:translateX(19px)}to{transform:none}}
+@keyframes cw-right-slide{from{transform:translateX(-19px)}to{transform:none}}
+@keyframes cw-center-rule{0%{transform:scaleX(0);opacity:0}12%{opacity:1}50%{transform:scaleX(1);opacity:1}90%{opacity:1}100%{transform:scaleX(0);opacity:0}}
+@keyframes cw-side-rule{0%{transform:scaleY(0);opacity:0}12%{opacity:1}50%{transform:scaleY(1);opacity:1}90%{opacity:1}100%{transform:scaleY(0);opacity:0}}
+.board.motion[data-motion="center-y"]{animation:cw-center-y .72s cubic-bezier(.2,.75,.25,1) both}
+.board.motion[data-motion="center-x"]{animation:cw-center-x .72s cubic-bezier(.2,.75,.25,1) both}
+.board.motion[data-motion="iris"]{animation:cw-iris .7s cubic-bezier(.2,.75,.25,1) both}
+.board.motion:is([data-motion="center-y"],[data-motion="center-x"],[data-motion="iris"]) .cell{animation:none}
+.board.motion[data-motion="center-y"] .cell[data-half="top"]{animation:cw-top-rise .72s cubic-bezier(.17,.9,.24,1) both}
+.board.motion[data-motion="center-y"] .cell[data-half="bottom"]{animation:cw-bottom-drop .72s cubic-bezier(.17,.9,.24,1) both}
+.board.motion[data-motion="center-x"] .cell[data-side="left"]{animation:cw-left-rise .72s cubic-bezier(.17,.9,.24,1) both}
+.board.motion[data-motion="center-x"] .cell[data-side="right"]{animation:cw-right-slide .72s cubic-bezier(.17,.9,.24,1) both}
+.board.motion[data-motion="center-y"]::after,.board.motion[data-motion="center-x"]::after{
+ content:"";position:absolute;z-index:6;pointer-events:none;
+ background:#d7a361;box-shadow:0 0 0 1px #a77843aa
+}
+.board.motion[data-motion="center-y"]::after{height:4px;width:84%;left:8%;top:calc(50% - 2px);
+ animation:cw-center-rule .72s ease-in-out both}
+.board.motion[data-motion="center-x"]::after{width:4px;height:84%;top:8%;left:calc(50% - 2px);
+ animation:cw-side-rule .72s ease-in-out both}
+@keyframes cw-notice-enter{from{opacity:.6;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes cw-notice-nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}60%{transform:translateX(3px)}}
+#message{min-height:18px}
+#message.notice-pop{animation:cw-notice-enter .22s ease-out both;color:#376c50;font-weight:750}
+#message.notice-warn{animation:cw-notice-nudge .19s ease-out both;color:#8f5639}
+@media(max-width:690px){.motion-controls{width:100%;justify-content:space-between}.motion-controls select{max-width:200px}}
+@media(prefers-reduced-motion:reduce){.board.motion,.board.motion .cell,.board.motion::after,#message{animation:none!important;clip-path:none!important;transform:none!important}}
+@media print{.board.motion,.board.motion .cell,.board.motion::after{animation:none!important;clip-path:none!important;transform:none!important}.motion-caption{display:none!important}}
+
 @media(max-width:1080px){.layout{grid-template-columns:minmax(200px,270px) 1fr}.result-panel{grid-column:1/-1}.clues{grid-template-columns:1fr 1fr}}
 @media(max-width:690px){.wrap{padding:16px 12px 40px}.layout{display:flex;flex-direction:column;gap:12px}.panel{width:100%;padding:16px}.board-panel{order:0}.tools-panel{order:1}.result-panel{order:2}.board{width:min(100%,460px)}.cell{font-size:clamp(11px,4.5vw,26px)}.clues{grid-template-columns:1fr}.topline{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}.block-btn,.link-btn{transition:none}}
@@ -146,8 +193,17 @@ button{cursor:pointer;touch-action:manipulation}
       <p class="help">未完成でも作業JSONを保存できます。完成問題の出力は全マス・全カギの検証を通ったときだけ有効です。</p>
     </aside>
     <section class="panel board-panel" aria-label="盤面編集">
-      <div class="board-header"><div><div class="meta">02 / BOARD</div><h2>編集キャンバス</h2></div><button class="block-btn" id="motion-preview" type="button">✦ 演出を試す</button></div>
+      <div class="board-header">
+        <div><div class="meta">02 / BOARD</div><h2>編集キャンバス</h2></div>
+        <div class="motion-controls">
+          <label class="motion-choice" for="motion-select">登場アニメーション
+            <select id="motion-select" aria-label="盤面の登場アニメーション"><option value="random">✦ おまかせ</option></select>
+          </label>
+          <button class="block-btn" id="motion-preview" type="button">▶ 再生</button>
+        </div>
+      </div>
       <div class="board-wrap"><div id="board" class="board" role="grid" aria-label="編集中のクロスワード"></div></div>
+      <p class="motion-caption" id="motion-caption" role="status" aria-live="polite">演出を選んで再生できます</p>
       <div class="board-foot"><span>■ 黒マス　□ 未入力</span><span id="size-label">7 × 7</span></div>
       <div class="edit-tray">
         <label class="field" for="cell-entry">選択したマスの文字</label>

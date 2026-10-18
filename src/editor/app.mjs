@@ -1,4 +1,5 @@
 import {normalizeKana} from '../core/kana.mjs';
+import {MOTIONS,availableMotions,chooseMotion,delayForCell} from './motion.mjs';
 import {parseWordList,generateWordLayout} from '../generator/words.mjs';
 import {createDraft,fromPuzzle,normalizeDraft,putCell,putClue,toPuzzle,inspectDraft,EMPTY} from './model.mjs';
 
@@ -17,11 +18,31 @@ const SAMPLE_WORDS=[
  'とけい | 時刻を知らせる道具',
  'こくご | 日本語を学ぶ教科'
 ].join('\n');
-const motions=['cw-slide','cw-mask','cw-pixel','cw-shape','cw-liquid','cw-wave'];
-let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
-let composing=false, lastMotion=-1;
 
-function say(message){$('message').textContent=message;}
+let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
+let composing=false, lastMotion=null, motionTimer=null;
+
+function say(message,tone=''){
+ const target=$('message');
+ target.textContent=message;
+ target.classList.remove('notice-pop','notice-warn');
+ if(tone==='success'||tone==='error'){
+  void target.offsetWidth;
+  target.classList.add(tone==='success'?'notice-pop':'notice-warn');
+ }
+}
+function stopMotion(){
+ if(motionTimer!==null){clearTimeout(motionTimer);motionTimer=null;}
+ const board=$('board');
+ board.classList.remove('motion');
+ board.removeAttribute('data-motion');
+ board.style.removeProperty('--motion');
+}
+for(const mode of MOTIONS){
+ const option=document.createElement('option');
+ option.value=mode.id;option.textContent=mode.label;
+ $('motion-select').append(option);
+}
 function remember(){try{localStorage.setItem(STORAGE,JSON.stringify(draft));}catch(_){}}
 try{
  const saved=localStorage.getItem(STORAGE);
@@ -74,8 +95,8 @@ function setLetter(raw){
  const {r,c}=selected;
  let text='';
  try{if(raw)text=normalizeKana(String(raw),{strict:true});}
- catch{say('ひらがな・カタカナ1文字を入力してください。');return false;}
- if(raw && text.length!==1){say('1マスにつき、カナ1文字を入力してください。');return false;}
+ catch{say('ひらがな・カタカナ1文字を入力してください。','error');return false;}
+ if(raw && text.length!==1){say('1マスにつき、カナ1文字を入力してください。','error');return false;}
  const next=putCell(draft,r,c,text||EMPTY);
  commit(next);
  say(text?'「'+text+'」を入力しました。':'選択マスを消しました。');
@@ -93,13 +114,26 @@ function handleCellClick(r,c){
  }
 }
 function showMotion(){
- const board=$('board'),count=draft.grid.length*[...draft.grid[0]].length;
- const candidates=count>121?[0,2,5]:[0,1,2,3,4,5];
- let pick=candidates[Math.floor(Math.random()*candidates.length)];
- if(pick===lastMotion&&candidates.length>1)pick=candidates[(candidates.indexOf(pick)+1)%candidates.length];
- lastMotion=pick;
- board.style.setProperty('--motion',motions[pick]);
- board.classList.remove('motion');void board.offsetWidth;board.classList.add('motion');
+ stopMotion();
+ const board=$('board');
+ const rows=draft.grid.length,cols=[...draft.grid[0]].length;
+ const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
+ const chosen=chooseMotion({rows,cols,requested:$('motion-select').value,
+    previous:lastMotion,reduced});
+ $('motion-caption').textContent=chosen.id?'✦ '+chosen.label:'動きを減らす設定を優先しています';
+ if(!chosen.id)return;
+ lastMotion=chosen.id;
+ board.dataset.motion=chosen.id;
+ const animations={slide:'cw-slide',mask:'cw-mask',pixel:'cw-pixel',shape:'cw-shape',
+   liquid:'cw-liquid',wave:'cw-wave',checker:'cw-checker',diagonal:'cw-diagonal'};
+ if(animations[chosen.id])board.style.setProperty('--motion',animations[chosen.id]);
+ for(const cell of board.children){
+  const r=Number(cell.dataset.r),c=Number(cell.dataset.c);
+  cell.style.setProperty('--delay',delayForCell(chosen.id,r,c,rows,cols)+'ms');
+ }
+ void board.offsetWidth;
+ board.classList.add('motion');
+ motionTimer=setTimeout(stopMotion,chosen.duration+35);
 }
 function makeClueRow(slot){
  const label=document.createElement('label');label.className='clue-line';
@@ -149,13 +183,22 @@ function render(){
  if(review.issues.length>9){
   const li=document.createElement('li');li.textContent='ほか '+(review.issues.length-9)+' 件';issues.append(li);
  }
- const board=$('board');board.classList.remove('motion');board.replaceChildren();
+ const board=$('board');stopMotion();board.replaceChildren();
+ const allowed=new Set(availableMotions(rows,cols).map(effect=>effect.id));
+ for(const option of $('motion-select').options){
+  if(option.value!=='random')option.disabled=!allowed.has(option.value);
+ }
+ if($('motion-select').selectedOptions[0]?.disabled){
+  $('motion-select').value='random';
+ }
  board.style.setProperty('--cols',cols);
  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
   const ch=[...draft.grid[r]][c];
   const cell=document.createElement('button');cell.type='button';
   cell.className='cell'+(ch==='■'?' black':ch===EMPTY?' empty':'')+(selected?.r===r&&selected?.c===c?' selected':'');
   cell.dataset.r=String(r);cell.dataset.c=String(c);
+  cell.dataset.half=r<(rows/2)?'top':'bottom';
+  cell.dataset.side=c<(cols/2)?'left':'right';
   cell.setAttribute('role','gridcell');
   cell.setAttribute('aria-label',(r+1)+'行'+(c+1)+'列 '+(ch===EMPTY?'未入力':ch==='■'?'黒マス':ch));
   const number=review.analysis.numbers[r+','+c];
@@ -165,8 +208,7 @@ function render(){
   if(ch!=='■'){
    const txt=document.createElement('span');txt.textContent=ch===EMPTY?'':ch;cell.append(txt);
   }
-  const delay=Math.round((cols-1-c)/Math.max(1,cols-1)*350+((r*7+c*3)%5)*17);
-  cell.style.setProperty('--delay',delay+'ms');
+  // Motion timing is assigned only when explicitly revealing a new board.
   cell.addEventListener('click',()=>handleCellClick(r,c));
   board.append(cell);
  }
@@ -219,7 +261,7 @@ $('generate-words').addEventListener('click',async()=>{
     clues:result.clues,generation:metadata};
   commit(next,{motion:true});
   say('配置案を作成しました。'+result.placed.length+'語を配置、未配置'+
-    result.unplaced.length+'語。完成問題にするには盤面チェックを確認してください。');
+    result.unplaced.length+'語。完成問題にするには盤面チェックを確認してください。','success');
  }catch(e){say('配置案の生成に失敗しました：'+e.message);}
  finally{
   button.disabled=false;
@@ -231,8 +273,8 @@ $('tool-letter').addEventListener('click',()=>setTool('letter'));
 $('tool-black').addEventListener('click',()=>setTool('black'));
 $('new').addEventListener('click',()=>{
  if(!window.confirm('新しい盤面に切り替えますか？ 現在の作業はUndoで戻せます。'))return;
- commit(createDraft(Number($('rows').value),Number($('cols').value)),{motion:true});
- selected={r:0,c:0};render();showMotion();say('新しい盤面を作りました。');
+ selected={r:0,c:0};commit(createDraft(Number($('rows').value),Number($('cols').value)),{motion:true});
+ say('新しい盤面を作りました。','success');
 });
 $('sample').addEventListener('click',async()=>{
  if(!window.confirm('例題で盤面を置き換えますか？ Undoで戻せます。'))return;
@@ -252,6 +294,8 @@ $('undo').addEventListener('click',doUndo);
 $('redo').addEventListener('click',doRedo);
 $('erase').addEventListener('click',()=>setLetter(''));
 $('motion-preview').addEventListener('click',showMotion);
+$('board').addEventListener('pointerdown',stopMotion,{capture:true});
+$('board').addEventListener('focusin',stopMotion,{capture:true});
 $('cell-entry').addEventListener('compositionstart',()=>{composing=true;});
 $('cell-entry').addEventListener('compositionend',()=>{
  composing=false;
@@ -290,12 +334,12 @@ function downloadJSON(data,suffix){
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 $('save').addEventListener('click',()=>{
- downloadJSON(draft,'-draft');say('作業JSONを書き出しました。');
+ downloadJSON(draft,'-draft');say('作業JSONを書き出しました。','success');
 });
 $('export-puzzle').addEventListener('click',()=>{
  const review=inspectDraft(draft);
  if(!review.ok){say('未完成です。右側の盤面チェックを確認してください。');return;}
- downloadJSON(toPuzzle(draft),'-puzzle');say('検証済みの完成問題JSONを書き出しました。');
+ downloadJSON(toPuzzle(draft),'-puzzle');say('検証済みの完成問題JSONを書き出しました。','success');
 });
 $('load').addEventListener('click',()=>$('file').click());
 $('file').addEventListener('change',async()=>{
