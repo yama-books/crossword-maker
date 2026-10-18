@@ -9,16 +9,18 @@ import {normalizeKana} from '../src/core/kana.mjs';
 const approvedPath = fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
 const approved=parseTsv(readFileSync(approvedPath,'utf8'));
 
-test('1300 editorially checked words pass lexical structural checks',()=>{
+test('1500 editorially checked meanings pass lexical structural checks',()=>{
  const check=checkFiles();
- assert.equal(check.candidates.count,1300);
- assert.equal(check.approved.count,1300);
- assert.equal(check.approved.uniqueAnswers,1298);
- assert.deepEqual(Object.keys(check.approved.homonymGroups).sort(),['カシ','ヒヨウシ']);
+ assert.equal(check.candidates.count,1500);
+ assert.equal(check.approved.count,1500);
+ assert.equal(check.approved.uniqueAnswers,1474);
+ assert.equal(Object.keys(check.approved.homonymGroups).length,25);
+ for(const answer of ['カシ','ヒヨウシ','ハシ','ツル','スイセイ'])
+   assert.ok(check.approved.homonymGroups[answer]);
  assert.deepEqual(check.errors,[]);
  assert.equal(Object.keys(check.approved.byCategory).length,65);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
- assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1187);
+ assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1361);
  assert.ok(approved.every(word=>word.review_status==='editor_checked'));
 });
 test('small kana expansion agrees with shared M1 function',()=>{
@@ -91,4 +93,15 @@ test('one unique answer per generated puzzle, with an easy/hard clue variant',()
   const musicParsed=parseWordList(toLegacyWordList(approved.filter(row=>['カシ','ヒヨウシ'].includes(row.normalized)),{category:'音楽のことば'}));
   assert.deepEqual(musicParsed.errors,[]);
   assert.deepEqual(new Set(musicParsed.entries.map(row=>row.display)),new Set(['歌詞','拍子']));
+});
+
+test('homonyms may share answer and surface when their explanations differ',()=>{
+ const groups=Map.groupBy(approved,row=>row.normalized);
+ assert.deepEqual(new Set(groups.get('ハシ').map(x=>x.surface)),new Set(['箸','橋','端']));
+ assert.deepEqual(new Set(groups.get('ツル').map(x=>x.category)),new Set(['野山の生き物','植物のしくみ']));
+ assert.equal(groups.get('スイセイ').length,2);
+ const plants=selectOneCluePerAnswer(approved,{category:'植物のしくみ'});
+ const birds=selectOneCluePerAnswer(approved,{category:'野山の生き物'});
+ assert.equal(plants.find(x=>x.normalized==='ツル').category,'植物のしくみ');
+ assert.equal(birds.find(x=>x.normalized==='ツル').category,'野山の生き物');
 });
