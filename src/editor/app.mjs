@@ -37,6 +37,7 @@ function stopMotion(){
  board.classList.remove('motion');
  board.removeAttribute('data-motion');
  board.style.removeProperty('--motion');
+ $('board-stage').removeAttribute('data-reveal');
 }
 for(const mode of MOTIONS){
  const option=document.createElement('option');
@@ -115,7 +116,7 @@ function handleCellClick(r,c){
 }
 function showMotion(){
  stopMotion();
- const board=$('board');
+ const board=$('board'),stage=$('board-stage');
  const rows=draft.grid.length,cols=[...draft.grid[0]].length;
  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
  const chosen=chooseMotion({rows,cols,requested:$('motion-select').value,
@@ -127,11 +128,13 @@ function showMotion(){
  const animations={slide:'cw-slide',mask:'cw-mask',pixel:'cw-pixel',shape:'cw-shape',
    liquid:'cw-liquid',wave:'cw-wave',checker:'cw-checker',diagonal:'cw-diagonal'};
  if(animations[chosen.id])board.style.setProperty('--motion',animations[chosen.id]);
- for(const cell of board.children){
+ // A whole-board reveal must never translate the individual cells.
+ if(chosen.group==='cells')for(const cell of board.children){
   const r=Number(cell.dataset.r),c=Number(cell.dataset.c);
   cell.style.setProperty('--delay',delayForCell(chosen.id,r,c,rows,cols)+'ms');
  }
  void board.offsetWidth;
+ if(chosen.id==='center-y'||chosen.id==='center-x')stage.dataset.reveal=chosen.id;
  board.classList.add('motion');
  motionTimer=setTimeout(stopMotion,chosen.duration+35);
 }
@@ -197,8 +200,6 @@ function render(){
   const cell=document.createElement('button');cell.type='button';
   cell.className='cell'+(ch==='■'?' black':ch===EMPTY?' empty':'')+(selected?.r===r&&selected?.c===c?' selected':'');
   cell.dataset.r=String(r);cell.dataset.c=String(c);
-  cell.dataset.half=r<(rows/2)?'top':'bottom';
-  cell.dataset.side=c<(cols/2)?'left':'right';
   cell.setAttribute('role','gridcell');
   cell.setAttribute('aria-label',(r+1)+'行'+(c+1)+'列 '+(ch===EMPTY?'未入力':ch==='■'?'黒マス':ch));
   const number=review.analysis.numbers[r+','+c];
