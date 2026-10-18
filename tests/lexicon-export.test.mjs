@@ -65,3 +65,19 @@ test('new history, arithmetic and solar-term genres export exact requested count
  const named=rows.filter(row=>row.normalized==='シリヨウ');
  assert.throws(()=>createLexiconExport(named,{category:'歴史と建築',count:2,seed:1}),/Only 1 matching/);
 });
+
+test('2000-sense dictionary exports new genres without repeating an answer',()=>{
+ const genres=['図書館と出版','海と船','農作業と畑','色彩と模様','物理とエネルギー',
+ '舞台と演劇','身体の動き','身近な化学','和菓子と甘味','世界の料理',
+ '鳥とその暮らし','地質と自然現象','庭と園芸','暮らしの工夫'];
+ for(const category of genres){
+   const sample=createLexiconExport(rows,{category,difficulty:2,count:10,seed:2026,maxLength:15});
+   assert.equal(sample.selected.length,10);
+   assert.equal(sample.selected.every(r=>r.category===category),true);
+   assert.deepEqual(parseWordList(sample.text).errors,[]);
+ }
+ const homonyms=createLexiconExport(rows,{category:'同音異義の名詞と動詞',count:10,maxLength:15});
+ assert.equal(homonyms.selected.length,10);
+ assert.equal(new Set(homonyms.selected.map(r=>r.normalized)).size,10);
+ assert.throws(()=>createLexiconExport(rows,{category:'同音異義の名詞と動詞',count:12,maxLength:15}),/Only 11 matching/);
+});

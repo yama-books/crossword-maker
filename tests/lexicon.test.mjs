@@ -9,18 +9,18 @@ import {normalizeKana} from '../src/core/kana.mjs';
 const approvedPath = fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
 const approved=parseTsv(readFileSync(approvedPath,'utf8'));
 
-test('1700 editorially checked meanings pass lexical structural checks',()=>{
+test('2000 editorially checked meanings pass lexical structural checks',()=>{
  const check=checkFiles();
- assert.equal(check.candidates.count,1700);
- assert.equal(check.approved.count,1700);
- assert.equal(check.approved.uniqueAnswers,1655);
- assert.equal(Object.keys(check.approved.homonymGroups).length,40);
+ assert.equal(check.candidates.count,2000);
+ assert.equal(check.approved.count,2000);
+ assert.equal(check.approved.uniqueAnswers,1936);
+ assert.equal(Object.keys(check.approved.homonymGroups).length,51);
  for(const answer of ['カシ','ヒヨウシ','ハシ','ツル','スイセイ'])
    assert.ok(check.approved.homonymGroups[answer]);
  assert.deepEqual(check.errors,[]);
- assert.equal(Object.keys(check.approved.byCategory).length,85);
+ assert.equal(Object.keys(check.approved.byCategory).length,100);
  assert.ok(Object.values(check.approved.byCategory).every(n=>n===20));
- assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1546);
+ assert.equal(Object.entries(check.approved.byLength).filter(([n])=>Number(n)<=5).reduce((n,[,value])=>n+value,0),1826);
  assert.ok(approved.every(word=>word.review_status==='editor_checked'));
 });
 test('small kana expansion agrees with shared M1 function',()=>{
@@ -58,13 +58,13 @@ test('homonyms keep both their distinct definitions and difficulty',()=>{
   const differentClue={...approved.find(row=>row.surface==='歌詞'),id:'LEX-9999',clue:'旋律に合わせて声に出す文章'};
   const validation=validateRecords([...approved,differentClue],{approved:true});
   assert.deepEqual(validation.errors,[]);
-  assert.equal(validation.uniqueAnswers,1655);
+  assert.equal(validation.uniqueAnswers,1936);
 });
 test('one unique answer per generated puzzle, with an easy/hard clue variant',()=>{
   const easy=selectOneCluePerAnswer(approved,{difficulty:1});
   const harder=selectOneCluePerAnswer(approved,{difficulty:2});
-  assert.equal(easy.length,1655);
-  assert.equal(harder.length,1655);
+  assert.equal(easy.length,1936);
+  assert.equal(harder.length,1936);
   assert.equal(new Set(easy.map(row=>row.normalized)).size,easy.length);
   assert.equal(new Set(harder.map(row=>row.normalized)).size,harder.length);
   assert.equal(easy.find(row=>row.normalized==='カシ').surface,'歌詞');
@@ -112,7 +112,7 @@ test('expanded sense clusters survive genre selection',()=>{
  const byAnswer=Map.groupBy(approved,row=>row.normalized);
  assert.deepEqual(new Set(byAnswer.get('キル').map(row=>row.surface)),new Set(['着る','切る']));
  assert.deepEqual(new Set(byAnswer.get('ハク').map(row=>row.surface)),new Set(['履く','掃く','吐く']));
- assert.deepEqual(new Set(byAnswer.get('イシ').map(row=>row.surface)),new Set(['石','意思','医師']));
+ assert.deepEqual(new Set(byAnswer.get('イシ').map(row=>row.surface)),new Set(['石','意思','医師','遺志']));
  assert.deepEqual(new Set(byAnswer.get('シリヨウ').map(row=>row.surface)),new Set(['資料','史料']));
  assert.deepEqual(new Set(byAnswer.get('シヨウセツ').map(row=>row.surface)),new Set(['小説','小雪']));
  const history=selectOneCluePerAnswer(approved,{category:'歴史と建築',difficulty:2});
@@ -121,4 +121,19 @@ test('expanded sense clusters survive genre selection',()=>{
  assert.equal(seasonal.find(row=>row.normalized==='シヨウセツ').surface,'小雪');
  assert.equal(seasonal.length,20);
  assert.equal(new Set(seasonal.map(row=>row.normalized)).size,20);
+});
+
+test('2000-sense milestone retains distinct homonym clues',()=>{
+ const byAnswer=Map.groupBy(approved,row=>row.normalized);
+ assert.deepEqual(new Set(byAnswer.get('カネ').map(r=>r.surface)),new Set(['鐘','金']));
+ assert.deepEqual(new Set(byAnswer.get('コウジ').map(r=>r.surface)),new Set(['麹','工事']));
+ assert.deepEqual(new Set(byAnswer.get('ハカル').map(r=>r.surface)),new Set(['量る','測る','計る']));
+ assert.deepEqual(new Set(byAnswer.get('カエル').map(r=>r.surface)),new Set(['かえる','帰る','変える']));
+ assert.equal(approved.find(r=>r.surface==='風切羽').reading,'かざきりばね');
+ const theatre=selectOneCluePerAnswer(approved,{category:'舞台と演劇'});
+ assert.equal(theatre.length,20);
+ assert.equal(new Set(theatre.map(r=>r.normalized)).size,20);
+ const homonyms=selectOneCluePerAnswer(approved,{category:'同音異義の名詞と動詞'});
+ assert.equal(homonyms.length,11);
+ assert.equal(new Set(homonyms.map(r=>r.normalized)).size,homonyms.length);
 });
