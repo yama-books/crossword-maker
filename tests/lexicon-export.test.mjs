@@ -50,3 +50,18 @@ test('size bounds, unknown genre, and impossible selection fail explicitly',()=>
  assert.throws(()=>createLexiconExport(rows,{count:60,category:'天体と地球',maxLength:15}),/Only 20 matching/);
  assert.throws(()=>createLexiconExport(rows,{minLength:10,maxLength:3}),RangeError);
 });
+
+test('new history, arithmetic and solar-term genres export exact requested counts',()=>{
+ const history=createLexiconExport(rows,{category:'歴史と建築',difficulty:2,count:10,seed:11,maxLength:15});
+ const arithmetic=createLexiconExport(rows,{category:'数学と数量',difficulty:1,count:12,seed:9,maxLength:15});
+ const season=createLexiconExport(rows,{category:'二十四節気',difficulty:3,count:15,seed:3,maxLength:15});
+ assert.deepEqual(history.selected.length,10);
+ assert.deepEqual(arithmetic.selected.length,12);
+ assert.deepEqual(season.selected.length,15);
+ for(const sample of [history,arithmetic,season]){
+   assert.deepEqual(parseWordList(sample.text).errors,[]);
+   assert.equal(sample.selected.length,new Set(sample.selected.map(row=>row.normalized)).size);
+ }
+ const named=rows.filter(row=>row.normalized==='シリヨウ');
+ assert.throws(()=>createLexiconExport(named,{category:'歴史と建築',count:2,seed:1}),/Only 1 matching/);
+});
