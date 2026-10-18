@@ -4,6 +4,31 @@ import {resolve} from 'node:path';
 import {parseTsv,selectOneCluePerAnswer} from './check-lexicon.mjs';
 
 const SOURCE=fileURLToPath(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url));
+const CONFLICT_PATH=fileURLToPath(new URL('../data/lexicon/clue_conflicts.tsv',import.meta.url));
+/**
+ * Only distinct-kana answers are listed here. Homonyms sharing the same
+ * normalized answer remain preserved as alternative senses, not conflicts.
+ * This is an editorial co-selection caution, NOT a dictionary deletion list.
+ */
+export function parseClueConflicts(text){
+ const lines=text.replace(/\r\n/g,'\n').trimEnd().split('\n');
+ if(lines.shift()!=='normalized_a\tnormalized_b\treview_reason')
+   throw new Error('Unexpected clue conflict header');
+ const seen=new Set();
+ return lines.map((line,index)=>{
+   const fields=line.split('\t');
+   if(fields.length!==3||fields.some(x=>!x.trim()))
+     throw new Error('Invalid clue conflict at line '+(index+2));
+   const [a,b,reason]=fields;
+   if(a===b)throw new Error('Cannot conflict answer with itself: '+a);
+   const key=[a,b].sort().join('\u0000');
+   if(seen.has(key))throw new Error('Repeated clue conflict: '+key);
+   seen.add(key);
+   return {a,b,reason};
+ });
+}
+const CLUE_CONFLICTS=parseClueConflicts(readFileSync(CONFLICT_PATH,'utf8'));
+
 const HELP='Usage: node scripts/export-lexicon.mjs [--category="木の種類"] [--difficulty=1] [--count=12] [--seed=1] [--min-length=2] [--max-length=8]\n'
   +'Options: --category may be repeated or comma-separated; --help prints help.\n'
   +'Output: display | reading | clue, one per line; maximum 60 answers for M3a.\n';
@@ -76,7 +101,24 @@ export function createLexiconExport(rows,opts={}){
  const distinct=selectOneCluePerAnswer(rows,{category:categoryFilter,difficulty});
  const valid=distinct.filter(r=>Number(r.length)>=minLength&&Number(r.length)<=maxLength);
  if(valid.length<count)throw new RangeError('Only '+valid.length+' matching distinct answers; requested '+count);
- const selected=shuffleStable(valid,seed).slice(0,count);
+ // Avoid co-selecting two different answers that need almost identical clues.
+ // Never remove either from the underlying lexicon. Within each random sample,
+ // keep the first candidate (seeded order), then skip its explicit conflicts.
+ const blocked=new Map();
+ for(const {a,b} of CLUE_CONFLICTS){
+   if(!blocked.has(a))blocked.set(a,new Set());
+   if(!blocked.has(b))blocked.set(b,new Set());
+   blocked.get(a).add(b);blocked.get(b).add(a);
+ }
+ const selected=[],answers=new Set();
+ for(const row of shuffleStable(valid,seed)){
+   if([...(blocked.get(row.normalized)||[])].some(answer=>answers.has(answer)))continue;
+   selected.push(row);
+   answers.add(row.normalized);
+   if(selected.length===count)break;
+ }
+ if(selected.length<count)
+   throw new RangeError('Only '+selected.length+' compatible answers for '+count+' requested; try fewer words or more genres');
  return {selected,available:valid.length,
    text:selected.map(row=>[row.surface,row.reading,row.clue].join(' | ')).join('\n')};
 }
