@@ -168,18 +168,89 @@ export function fillCrossword({grid,entries,required=[],difficulty=2,categories=
     nodes,dictionaryAnswers:index.uniqueAnswers};
 }
 
-/** Find a complete crossword from curated 5x5 layouts (never a draft). */
+/**
+ * Enumerate 180-degree symmetric, non-adjacent-black patterns instead of
+ * relying on only three layouts. 5x5 has just 13 rotational cell orbits,
+ * so exhaustive *shape* enumeration is cheap; dictionary search stays bounded.
+ */
+export function candidateMasks5(required=[]) {
+  const terms=normalRequired(required);
+  const orbits=[],seen=new Set();
+  for(let i=0;i<25;i++){
+    const j=24-i,base=Math.min(i,j);
+    if(seen.has(base))continue;
+    seen.add(base);
+    orbits.push(i===j?[i]:[i,j]);
+  }
+  const picked=new Set(),out=[];
+  const linked=index=>[index-5,index+5,index%5?index-1:-1,index%5<4?index+1:-1]
+    .filter(j=>j>=0&&j<25);
+  const enoughSlots=slots=>{
+    const available=new Map();
+    for(const slot of slots)available.set(slot.cells.length,(available.get(slot.cells.length)||0)+1);
+    const need=new Map();
+    for(const word of terms)need.set(word.length,(need.get(word.length)||0)+1);
+    return [...need].every(([n,count])=>(available.get(n)||0)>=count);
+  };
+  function visit(k,blackCount){
+    if(blackCount>10)return;
+    if(k===orbits.length){
+      if(blackCount<3)return;
+      const grid=Array.from({length:5},(_,r)=>Array.from({length:5},(_,col)=>
+        picked.has(r*5+col)?'■':'□').join(''));
+      const analysis=extractSlots(grid);
+      if(checkPattern(grid,DEFAULT_RULES,analysis)||analysis.slots.length<4||
+        analysis.slots.some(s=>s.cells.length>10)||!enoughSlots(analysis.slots))return;
+      out.push({grid,slots:analysis.slots.length,blackCount,
+        longSlots:analysis.slots.filter(s=>s.cells.length>=6).length,
+        shortSlots:analysis.slots.filter(s=>s.cells.length<=3).length});
+      return;
+    }
+    visit(k+1,blackCount);
+    const cells=orbits[k];
+    if(cells.some(i=>linked(i).some(j=>picked.has(j)||cells.includes(j))))return;
+    for(const i of cells)picked.add(i);
+    visit(k+1,blackCount+cells.length);
+    for(const i of cells)picked.delete(i);
+  }
+  visit(0,0);
+  return out;
+}
+
+/** A bounded multi-pattern search; unsupported is never silently reported as unsat. */
 export function generateCompleteCrossword({entries,required=[],size=5,difficulty=2,
   seed=1,maxNodes=15000,title='自動生成クロスワード'}={}) {
   if(size!==5)return {status:'unsupported',reason:'完成生成の初期版は5×5のみ対応します。'};
-  let spent=0,last={status:'contradiction',reason:'成立する配置が見つかりません。'};
-  for(let i=0;i<STARTER_MASKS_5.length;i++){
-    const mask=STARTER_MASKS_5[(i+(seed%STARTER_MASKS_5.length))%STARTER_MASKS_5.length];
-    const res=fillCrossword({grid:mask,entries,required,difficulty,seed:seed+i,
-      maxNodes,title});
-    spent+=res.nodes??0;
-    if(res.status==='success')return {...res,layout:i+1,totalNodes:spent};
-    last=res;
+  const terms=normalRequired(required);
+  const layouts=candidateMasks5(terms);
+  const suggested=STARTER_MASKS_5.map(grid=>grid.join('/'));
+  layouts.sort((a,b)=>{
+    const score=layout=>Math.abs(layout.blackCount-7)*8+
+      Math.abs(layout.slots-9)*3+layout.longSlots*15+
+      Math.max(0,4-layout.shortSlots)*2-
+      (suggested.includes(layout.grid.join('/'))?6:0);
+    return score(a)-score(b)||
+      hash(a.grid.join(''),seed)-hash(b.grid.join(''),seed);
+  });
+  const maxLayouts=Math.min(80,layouts.length);
+  let spent=0,attempted=0,hasExhausted=false;
+  let sawCandidate=false;
+  for(let i=0;i<maxLayouts && spent<maxNodes;i++){
+    const layout=layouts[i];
+    const remaining=maxNodes-spent;
+    const perMask=Math.min(900,remaining);
+    const result=fillCrossword({grid:layout.grid,entries,required:terms,difficulty,
+      seed:seed+i,maxNodes:perMask,title});
+    attempted++;
+    spent+=result.nodes??0;
+    if(result.status==='success')return {...result,layout:i+1,totalNodes:spent,
+      triedPatterns:attempted,totalPatterns:layouts.length};
+    if(result.status==='exhausted')hasExhausted=true;
+    if(result.status==='contradiction'||result.status==='exhausted')sawCandidate=true;
   }
-  return {...last,totalNodes:spent};
+  if(!layouts.length)return {status:'no_candidate',nodes:0,totalNodes:0,triedPatterns:0,
+    reason:'指定語の長さに合う標準5×5の黒マス配置がありません。語数を減らすか、今後の大きい盤面対応をお待ちください。'};
+  return {status:hasExhausted||spent>=maxNodes||attempted<layouts.length?'exhausted':'contradiction',
+    nodes:spent,totalNodes:spent,triedPatterns:attempted,totalPatterns:layouts.length,
+    reason:'試した'+attempted+'種類の黒マス配置では完成候補が見つかりませんでした。別の組合せを試すか、必須語を減らしてください。'};
 }
