@@ -21,6 +21,7 @@ const SAMPLE_WORDS=[
 
 let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
 let composing=false, lastMotion=null, motionTimer=null;
+let pendingAuto=null, runningAutoWorker=null;
 
 function say(message,tone=''){
  const target=$('message');
@@ -49,8 +50,15 @@ try{
  if(saved)draft=normalizeDraft(JSON.parse(saved));
 }catch(e){say('保存されたデータを読めなかったため、新規盤面で開始しました。');}
 
+function clearPendingAuto(){
+ pendingAuto=null;
+ $('auto-preview').hidden=true;
+ $('auto-apply').disabled=true;
+ $('auto-preview-grid').replaceChildren();
+}
 function commit(next,opts={}){
  if(JSON.stringify(next)===JSON.stringify(draft))return;
+ clearPendingAuto();
  undoStack.push(structuredClone(draft));
  if(undoStack.length>60)undoStack.shift();
  redoStack=[];
@@ -59,11 +67,13 @@ function commit(next,opts={}){
 }
 function doUndo(){
  if(!undoStack.length)return;
+ clearPendingAuto();
  redoStack.push(structuredClone(draft));
  draft=undoStack.pop();remember();render();say('ひとつ前の操作に戻しました。');
 }
 function doRedo(){
  if(!redoStack.length)return;
+ clearPendingAuto();
  undoStack.push(structuredClone(draft));
  draft=redoStack.pop();remember();render();say('操作をやり直しました。');
 }
@@ -351,4 +361,93 @@ $('file').addEventListener('change',async()=>{
  }catch(e){say('読み込み失敗：'+e.message);}
  finally{$('file').value='';}
 });
+
+function previewAutoPuzzle(puzzle){
+  const container=$('auto-preview-grid');
+  container.replaceChildren();
+  container.style.setProperty('--cols',puzzle.cols);
+  for(const line of puzzle.grid)for(const ch of line){
+    const cell=document.createElement('span');
+    cell.className='auto-preview-cell'+(ch==='■'?' black':'');
+    cell.textContent=ch==='■'?'':ch;
+    container.append(cell);
+  }
+  $('auto-preview').hidden=false;
+  $('auto-apply').disabled=false;
+}
+function setAutoBusy(busy){
+  $('auto-start').disabled=busy;
+  $('auto-fill').disabled=busy;
+  $('auto-cancel').hidden=!busy;
+}
+function runAutoFill(mode){
+  if(runningAutoWorker)return;
+  const required=$('auto-required').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const status=$('auto-status');
+  clearPendingAuto();
+  status.hidden=false;
+  status.classList.remove('warning');
+  if(required.length>5){
+    status.classList.add('warning');
+    status.textContent='必須語は最大5語にしてください。';
+    return;
+  }
+  if(typeof Worker!=='function'){
+    status.classList.add('warning');
+    status.textContent='このブラウザは非同期の自動生成に対応していません。';
+    return;
+  }
+  status.textContent='辞書を読み込み、交差条件を探索しています…';
+  let worker;
+  try{worker=new Worker(new URL('../generator/auto-worker.mjs',import.meta.url),{type:'module'});}
+  catch(error){status.textContent='自動生成を開始できません：'+error.message;status.classList.add('warning');return;}
+  runningAutoWorker=worker;
+  setAutoBusy(true);
+  const cleanup=()=>{
+    if(runningAutoWorker!==worker)return;
+    worker.terminate();
+    runningAutoWorker=null;
+    setAutoBusy(false);
+  };
+  worker.onmessage=event=>{
+    if(runningAutoWorker!==worker || event.data?.id!==1)return;
+    const result=event.data.result??{status:'error',reason:'予期しない応答です。'};
+    cleanup();
+    if(result.status==='success'){
+      pendingAuto=result.puzzle;
+      previewAutoPuzzle(result.puzzle);
+      const n=result.puzzle.entries.length;
+      status.textContent='完成候補が見つかりました。'+n+'問、探索'+result.totalNodes??result.nodes+'回。採用するまで今の編集内容は変わりません。';
+    }else{
+      status.classList.add('warning');
+      status.textContent='今回は完成盤面が見つかりませんでした（'+result.status+'）。'+(result.reason??'')+
+        ' 必須語や黒マスの配置を変更するか、別の難易度を試してください。';
+    }
+  };
+  worker.onerror=event=>{
+    if(runningAutoWorker!==worker)return;
+    cleanup();status.classList.add('warning');
+    status.textContent='自動生成でエラーが発生しました。操作中の盤面は変更していません。';
+  };
+  worker.postMessage({id:1,mode,grid:draft.grid.slice(),clues:{...draft.clues},
+    required,difficulty:Number($('auto-difficulty').value),title:draft.title});
+}
+$('auto-start').addEventListener('click',()=>runAutoFill('new'));
+$('auto-fill').addEventListener('click',()=>runAutoFill('fill'));
+$('auto-cancel').addEventListener('click',()=>{
+  if(runningAutoWorker){runningAutoWorker.terminate();runningAutoWorker=null;}
+  setAutoBusy(false);
+  const status=$('auto-status');
+  status.hidden=false;status.textContent='探索を中止しました。現在の盤面は変更していません。';
+});
+$('auto-apply').addEventListener('click',()=>{
+  if(!pendingAuto)return;
+  const chosen=pendingAuto;
+  try {
+    commit(fromPuzzle(chosen),{motion:true});
+    say('辞書で生成した完成問題を採用しました。Undoで戻せます。','success');
+    $('auto-status').textContent='完成問題を採用しました。カギや盤面を編集できます。';
+  }catch(e){say('完成候補を採用できませんでした：'+e.message,'error');}
+});
+
 render();
