@@ -13,11 +13,11 @@ async function loadEntries(){
   return cachedEntries;
 }
 self.addEventListener('message',async event=>{
-  const {id,mode,grid,required=[],difficulty=2,title='クロスワード',clues={}}=event.data??{};
+  const {id,mode,grid,required=[],difficulty=2,title='クロスワード',clues={},seed=20261019}=event.data??{};
   try {
     const entries=await loadEntries();
     const normalizedRequired=resolveRequiredWords(required,entries);
-    const request={entries,required:normalizedRequired,difficulty,title,seed:20261019,maxNodes:22000};
+    const request={entries,required:normalizedRequired,difficulty,title,seed,maxNodes:22000};
     const result=mode==='new'?generateCompleteCrossword(request):
       mode==='fill'?fillCrossword({...request,grid}):{status:'invalid_mode',reason:'操作の種類が不明です。'};
     // A manually authored clue for a fully fixed slot must not be lost.

@@ -125,133 +125,138 @@ button{cursor:pointer;touch-action:manipulation}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}.block-btn,.link-btn{transition:none}}
 @media print{.topline,.heading,.tools-panel,.result-panel,.edit-tray,.board-foot,.footer,.block-btn{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}.layout{display:block}.panel{border:none;box-shadow:none}.board{width:130mm}.cell{font-size:16pt}.cell.black{background:#333!important;print-color-adjust:exact}}
 </style>
+<link rel="stylesheet" href="./src/editor/layout-v3.css">
 </head>
 <body>
 <div class="wrap">
-  <div class="topline"><span>CROSSWORD STUDIO / EDIT MODE</span><span>RETRO MATTE · M2</span></div>
+  <div class="topline"><span>CROSSWORD STUDIO</span><span>MAKE · PLAY · LEARN</span></div>
   <header class="heading">
-    <div><h1>クロスワード工房</h1><p class="lead">ことばを並べて、少しずつ完成させる。</p></div>
-    <a class="link-btn" href="./index.html">← とく画面へ</a>
+    <div><h1>クロスワード工房</h1><p class="lead">作って、交差させて、仕上げる。</p></div>
+    <a class="link-btn" href="./index.html">とく画面 ↗</a>
   </header>
   <main class="layout">
-    <aside class="panel tools-panel" aria-label="制作設定">
-      <div class="meta">01 / CREATE</div><h2>盤面をつくる</h2>
-      <div class="stack">
-        <label class="field" for="puzzle-title">タイトル<input class="input" id="puzzle-title" maxlength="80" autocomplete="off"></label>
-        <div class="split">
-          <label class="field" for="rows">タテ <select id="rows"></select></label>
-          <label class="field" for="cols">ヨコ <select id="cols"></select></label>
-        </div>
-        <div class="button-grid">
-          <button type="button" class="block-btn" id="new">新しい盤面</button>
-          <button type="button" class="block-btn" id="sample">例題を編集</button>
-        </div>
-        <p class="help">盤面サイズを指定して「新しい盤面」。途中の作業は自動保存されます。</p>
-      </div>
-      <div class="soft-line"></div>
-      <div class="meta">02 / WORDS FIRST · BETA</div>
-      <h3>単語から盤面を生成</h3>
-      <p class="help">1行につき「表示名 | よみ | カギ」。ひらがなの語なら「よみ | カギ」でも入力できます。</p>
-      <label class="field" for="word-source">使いたい単語
-        <textarea id="word-source" class="input word-source" spellcheck="false" aria-label="自動配置する単語とカギ" placeholder="図書館 | としょかん | 本を読む場所&#10;がっこう | 勉強するところ"></textarea>
-      </label>
-      <div class="button-grid" style="margin-top:9px">
-        <button class="block-btn" id="word-sample" type="button">例の単語を入れる</button>
-        <button class="block-btn primary" id="generate-words" type="button">✦ 配置案をつくる</button>
-      </div>
-      <div id="word-result" class="word-result" role="status" aria-live="polite" hidden></div>
-      <ul id="unplaced-words" class="unplaced" aria-label="配置できなかった単語"></ul>
-      <p class="help">配置できた語も、標準の黒マス配置などの検証で未完成となる場合があります。完成問題には盤面チェックが必要です。</p>
-      <div class="soft-line"></div>
-      <div class="meta">03 / DICTIONARY AUTOFILL · BETA</div>
-      <h3>辞書から完成問題をつくる</h3>
-      <p class="help">登録済みの2,000語義を使い、すべてのタテ・ヨコの語枠が成立する盤面を探します。途中入力した文字・黒マスは、残りを埋めるときには変更しません。</p>
-      <label class="field" for="auto-required">必ず入れたいことば（1行に1語、登録済み漢字も可）
-        <textarea class="input" id="auto-required" rows="3" placeholder="必ず入れる語（1行に1語）" spellcheck="false" autocomplete="off">としょかん
-がっこう</textarea>
-      </label>
-      <label class="field" for="auto-difficulty" style="margin-top:10px">難易度
-        <select id="auto-difficulty" class="input">
-          <option value="1">やさしい</option>
-          <option value="2">ふつう</option>
-          <option value="3" selected>むずかしい</option>
-        </select>
-      </label>
-      <div class="button-grid" style="margin-top:11px">
-        <button class="block-btn primary" type="button" id="auto-start">✦ 5×5を自動生成</button>
-        <button class="block-btn" type="button" id="auto-fill">□ 残りを埋める</button>
-      </div>
-      <button class="block-btn" type="button" id="auto-cancel" hidden style="margin-top:9px;width:100%">探索を中止</button>
-      <div id="auto-status" class="word-result" role="status" aria-live="polite" hidden></div>
-      <div id="auto-preview" hidden>
-        <p class="help" style="margin-top:9px">完成候補（まだ盤面には反映していません）</p>
-        <div id="auto-preview-grid" class="auto-preview-grid" aria-label="生成された盤面のプレビュー"></div>
-        <button class="block-btn primary" id="auto-apply" type="button" style="margin-top:10px;width:100%" disabled>この盤面を採用</button>
-      </div>
-      <p class="help">生成は5×5から開始。今の盤面を埋める場合は黒マスの形を保持します。成立しない場合、元の盤面は変更されません。</p>
-      <div class="soft-line"></div>
-      <h3>編集ツール</h3>
-      <div class="button-grid">
-        <button class="block-btn active" type="button" id="tool-letter" aria-pressed="true">あ 文字</button>
-        <button class="block-btn" type="button" id="tool-black" aria-pressed="false">■ 黒マス</button>
-      </div>
-      <p class="help">マスをタップして文字入力。黒マスツールではマスをタップして切り替えます。</p>
-      <div class="button-grid" style="margin-top:14px">
-        <button class="block-btn" id="undo" type="button">↶ 戻す</button>
-        <button class="block-btn" id="redo" type="button">↷ やり直す</button>
-      </div>
-      <h3>盤面ルール</h3>
-      <label class="choice"><input type="checkbox" id="symmetry"> 黒マスの180度対称</label>
-      <label class="choice"><input type="checkbox" id="no-adjacent"> 黒マスの縦横隣接を禁止</label>
-      <p class="help">この設定は問題JSONにも記録されます。ほかの検証ルールは標準設定です。</p>
-      <div class="soft-line"></div>
-      <h3>保存と読込</h3>
-      <div class="stack">
-        <button class="block-btn primary" id="save" type="button">↓ 作業JSONを保存</button>
-        <button class="block-btn" id="load" type="button">↑ JSONを読み込む</button>
-        <button class="block-btn" id="export-puzzle" type="button" disabled>✓ 完成問題JSON</button>
-        <input id="file" type="file" accept=".json,application/json" hidden>
-      </div>
-      <p class="help">未完成でも作業JSONを保存できます。完成問題の出力は全マス・全カギの検証を通ったときだけ有効です。</p>
-    </aside>
     <section class="panel board-panel" aria-label="盤面編集">
       <div class="board-header">
-        <div><div class="meta">02 / BOARD</div><h2>編集キャンバス</h2></div>
+        <div><p class="section-kicker">01 / EDIT</p><h2>盤面を編集</h2></div>
+        <strong id="size-label">7 × 7 マス</strong>
+      </div>
+      <div class="board-wrap"><div class="board-stage" id="board-stage"><div id="board" class="board" role="grid" aria-label="編集中のクロスワード"></div></div></div>
+      <div class="board-foot"><span>マスを選んで文字を入力</span><span>■ 黒マス</span></div>
+      <div class="tool-row" role="group" aria-label="盤面編集ツール">
+        <button class="block-btn active" type="button" id="tool-letter" aria-pressed="true">あ 文字</button>
+        <button class="block-btn" type="button" id="tool-black" aria-pressed="false">■ 黒マス</button>
+        <button class="block-btn" id="undo" type="button">↶ 戻す</button>
+        <button class="block-btn" id="redo" type="button">↷ 進む</button>
+      </div>
+      <div class="edit-tray">
+        <label class="field" for="cell-entry">選択中のマス <span class="mini" id="cell-label">マスを選択</span></label>
+        <div class="row">
+          <input id="cell-entry" class="input" type="text" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="カナ1文字" aria-label="選択マスのカナを入力">
+          <button class="block-btn" id="erase" type="button">消す</button>
+        </div>
+      </div>
+      <p id="message" class="help" role="status" aria-live="polite"></p>
+      <details class="motion-toggle">
+        <summary>登場アニメーション</summary>
         <div class="motion-controls">
-          <label class="motion-choice" for="motion-select">登場アニメーション
+          <label class="motion-choice" for="motion-select">動きの種類
             <select id="motion-select" aria-label="盤面の登場アニメーション"><option value="random">✦ おまかせ</option></select>
           </label>
           <button class="block-btn" id="motion-preview" type="button">▶ 再生</button>
         </div>
-      </div>
-      <div class="board-wrap"><div class="board-stage" id="board-stage"><div id="board" class="board" role="grid" aria-label="編集中のクロスワード"></div></div></div>
-      <p class="motion-caption" id="motion-caption" role="status" aria-live="polite">演出を選んで再生できます</p>
-      <div class="board-foot"><span>■ 黒マス　□ 未入力</span><span id="size-label">7 × 7</span></div>
-      <div class="edit-tray">
-        <label class="field" for="cell-entry">選択したマスの文字</label>
-        <div class="row">
-          <input id="cell-entry" class="input" type="text" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="カナ1文字" aria-label="選択マスのカナを入力">
-          <button class="block-btn" id="erase" type="button">消す</button>
-          <span class="mini" id="cell-label">マスを選択</span>
-        </div>
-        <p class="help">PCではマスを選んで直接キー入力できます。スマホでは上の入力欄を使用します。</p>
-      </div>
-      <p id="message" class="help" role="status" aria-live="polite"></p>
+        <p class="motion-caption" id="motion-caption" role="status" aria-live="polite">演出を選んで再生できます</p>
+      </details>
     </section>
+    <aside class="panel tools-panel" aria-label="制作設定">
+      <div class="panel-title">
+        <div><p class="section-kicker">02 / GENERATE</p><h2>自動で仕上げる</h2></div>
+      </div>
+      <p class="autofill-intro">必須語から最初に作るか、今の盤面の空いているマスだけを埋められます。</p>
+      <div class="primary-controls">
+        <label class="field" for="auto-required">新しい問題に入れたいことば
+          <textarea id="auto-required" class="input" rows="2" placeholder="例：としょかん&#10;例：ねこ" spellcheck="false" autocomplete="off">としょかん
+がっこう</textarea>
+        </label>
+        <label class="field" for="auto-difficulty">難易度
+          <select id="auto-difficulty" class="input">
+            <option value="1">やさしい</option>
+            <option value="2">ふつう</option>
+            <option value="3" selected>むずかしい</option>
+          </select>
+        </label>
+        <div class="button-grid">
+          <button class="block-btn primary" type="button" id="auto-start">✦ 最初から作る</button>
+          <button class="block-btn" type="button" id="auto-fill">□ 残りを埋める</button>
+        </div>
+        <p class="status-inline">「残りを埋める」は今の盤面と入力済みの文字を固定。上の必須語は新規生成だけに使います。</p>
+        <button class="block-btn" type="button" id="auto-cancel" hidden>探索を中止</button>
+      </div>
+      <div id="auto-status" class="word-result" role="status" aria-live="polite" hidden></div>
+      <div id="auto-preview" hidden>
+        <p class="help"><strong>完成候補</strong> · まだ現在の盤面は変わっていません。</p>
+        <div id="auto-preview-grid" class="auto-preview-grid" aria-label="生成された盤面のプレビュー"></div>
+        <div class="button-grid" style="margin-top:10px"><button class="block-btn primary" id="auto-apply" type="button" disabled>✓ この候補を採用</button><button class="block-btn" id="auto-retry" type="button">↻ 別の候補</button></div>
+      </div>
+      <details class="collapse-panel">
+        <summary>新しい盤面・例題から始める</summary>
+        <div class="collapse-inner stack">
+          <label class="field" for="puzzle-title">タイトル<input class="input" id="puzzle-title" maxlength="80" autocomplete="off"></label>
+          <div class="split">
+            <label class="field" for="rows">タテ <select id="rows"></select></label>
+            <label class="field" for="cols">ヨコ <select id="cols"></select></label>
+          </div>
+          <div class="button-grid">
+            <button type="button" class="block-btn" id="new">新しい盤面</button>
+            <button type="button" class="block-btn" id="sample">例題を編集</button>
+          </div>
+        </div>
+      </details>
+      <details class="collapse-panel">
+        <summary>単語を交差配置する（試作）</summary>
+        <div class="collapse-inner">
+          <p class="help">「表示名 | よみ | カギ」を1行ずつ入力します。完成問題とは限らない配置案です。</p>
+          <label class="field" for="word-source">使いたい単語
+            <textarea id="word-source" class="input word-source" spellcheck="false" aria-label="自動配置する単語とカギ" placeholder="図書館 | としょかん | 本を読む場所"></textarea>
+          </label>
+          <div class="button-grid">
+            <button class="block-btn" id="word-sample" type="button">例の単語を入れる</button>
+            <button class="block-btn primary" id="generate-words" type="button">配置案をつくる</button>
+          </div>
+          <div id="word-result" class="word-result" role="status" aria-live="polite" hidden></div>
+          <ul id="unplaced-words" class="unplaced" aria-label="配置できなかった単語"></ul>
+        </div>
+      </details>
+      <details class="collapse-panel">
+        <summary>保存・読込・詳細設定</summary>
+        <div class="collapse-inner">
+          <h3>盤面ルール</h3>
+          <label class="choice"><input type="checkbox" id="symmetry"> 黒マスの180度対称</label>
+          <label class="choice"><input type="checkbox" id="no-adjacent"> 黒マスの縦横隣接を禁止</label>
+          <p class="help">ルールはJSONに記録されます。</p>
+          <h3>データを保存</h3>
+          <div class="advanced-actions">
+            <button class="block-btn primary" id="save" type="button">↓ 作業JSONを保存</button>
+            <button class="block-btn" id="load" type="button">↑ JSONを読み込む</button>
+            <button class="block-btn" id="export-puzzle" type="button" disabled>✓ 完成問題JSON</button>
+            <input id="file" type="file" accept=".json,application/json" hidden>
+          </div>
+          <p class="help">途中の内容は端末内にも自動保存されます。</p>
+        </div>
+      </details>
+    </aside>
     <aside class="panel result-panel" aria-label="問題の完成状況">
-      <div class="meta">03 / REVIEW</div><h2>盤面チェック</h2>
+      <div class="panel-title"><div><p class="section-kicker">03 / REVIEW</p><h2>盤面チェックとカギ</h2></div></div>
       <div id="validation" class="status warning" role="status" aria-live="polite">読み込み中...</div>
       <div class="mini" id="stats"></div>
       <ul id="issues" class="issues"></ul>
-      <div class="soft-line"></div>
       <div class="clues">
         <section><h3>ヨコのカギ →</h3><div id="across" class="clue-list"></div></section>
         <section><h3>タテのカギ ↓</h3><div id="down" class="clue-list"></div></section>
       </div>
-      <p class="help" style="margin-top:18px">カギ欄は直接編集できます。盤面を変更しても、同じ開始マスのカギは保持されます。</p>
+      <p class="help">カギの文章は直接編集できます。</p>
     </aside>
   </main>
-  <div class="footer">クロスワード工房 · 作業内容はこの端末のブラウザ内に保存されます · GitHub Pages対応</div>
+  <div class="footer">クロスワード工房 · この端末のブラウザに作業を保存</div>
 </div>
 <script type="module" src="./src/editor/app.mjs"></script>
 </body>

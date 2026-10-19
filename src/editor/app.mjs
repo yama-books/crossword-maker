@@ -22,6 +22,7 @@ const SAMPLE_WORDS=[
 let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
 let composing=false, lastMotion=null, motionTimer=null;
 let pendingAuto=null, runningAutoWorker=null;
+let autoSeed=20261019, lastAutoMode='new';
 
 function say(message,tone=''){
  const target=$('message');
@@ -380,9 +381,12 @@ function setAutoBusy(busy){
   $('auto-fill').disabled=busy;
   $('auto-cancel').hidden=!busy;
 }
-function runAutoFill(mode){
+function runAutoFill(mode,{retry=false}={}){
   if(runningAutoWorker)return;
-  const required=$('auto-required').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(retry)autoSeed=(autoSeed+1)>>>0;
+  else autoSeed=20261019;
+  lastAutoMode=mode;
+  const required=mode==='new' ? $('auto-required').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean) : [];
   const status=$('auto-status');
   clearPendingAuto();
   status.hidden=false;
@@ -397,7 +401,12 @@ function runAutoFill(mode){
     status.textContent='このブラウザは非同期の自動生成に対応していません。';
     return;
   }
-  status.textContent='辞書を読み込み、交差条件を探索しています…';
+  if(mode==='fill' && draft.grid.every(row=>[...row].every(ch=>ch===EMPTY))){
+    status.classList.add('warning');
+    status.textContent='まだ何も配置されていません。「最初から作る」で完成盤面を生成するか、黒マスや文字を入力してください。';
+    return;
+  }
+  status.textContent=mode==='new'?'必須語に合わせて黒マスの配置も探しています…':'今の黒マスと入力済み文字を保護して、残りを探索しています…';
   let worker;
   try{worker=new Worker(new URL('../generator/auto-worker.mjs',import.meta.url),{type:'module'});}
   catch(error){status.textContent='自動生成を開始できません：'+error.message;status.classList.add('warning');return;}
@@ -420,8 +429,8 @@ function runAutoFill(mode){
       status.textContent='完成候補が見つかりました。'+n+'問、探索'+(result.totalNodes??result.nodes)+'回。採用するまで今の編集内容は変わりません。';
     }else{
       status.classList.add('warning');
-      status.textContent='今回は完成盤面が見つかりませんでした（'+result.status+'）。'+(result.reason??'')+
-        ' 必須語や黒マスの配置を変更するか、別の難易度を試してください。';
+      status.textContent='完成候補が見つかりませんでした。'+(result.reason??'')+
+        (mode==='fill'?' 現在の入力を保護しているため、文字や黒マスの調整が必要な場合があります。':' 必須語を減らすか、条件を変えて試してください。');
     }
   };
   worker.onerror=event=>{
@@ -430,10 +439,11 @@ function runAutoFill(mode){
     status.textContent='自動生成でエラーが発生しました。操作中の盤面は変更していません。';
   };
   worker.postMessage({id:1,mode,grid:draft.grid.slice(),clues:{...draft.clues},
-    required,difficulty:Number($('auto-difficulty').value),title:draft.title});
+    required,difficulty:Number($('auto-difficulty').value),title:draft.title,seed:autoSeed});
 }
 $('auto-start').addEventListener('click',()=>runAutoFill('new'));
 $('auto-fill').addEventListener('click',()=>runAutoFill('fill'));
+$('auto-retry').addEventListener('click',()=>runAutoFill(lastAutoMode,{retry:true}));
 $('auto-cancel').addEventListener('click',()=>{
   if(runningAutoWorker){runningAutoWorker.terminate();runningAutoWorker=null;}
   setAutoBusy(false);
