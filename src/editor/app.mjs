@@ -417,7 +417,7 @@ function runAutoFill(mode){
       pendingAuto=result.puzzle;
       previewAutoPuzzle(result.puzzle);
       const n=result.puzzle.entries.length;
-      status.textContent='完成候補が見つかりました。'+n+'問、探索'+result.totalNodes??result.nodes+'回。採用するまで今の編集内容は変わりません。';
+      status.textContent='完成候補が見つかりました。'+n+'問、探索'+(result.totalNodes??result.nodes)+'回。採用するまで今の編集内容は変わりません。';
     }else{
       status.classList.add('warning');
       status.textContent='今回は完成盤面が見つかりませんでした（'+result.status+'）。'+(result.reason??'')+
