@@ -1,6 +1,8 @@
 import {readFileSync, writeFileSync, mkdirSync, copyFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {validatePuzzle} from '../src/core/puzzle.mjs';
+import {parseTsv,validateRecords} from './check-lexicon.mjs';
+import {lexiconPayload} from '../src/generator/lexicon.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const read = path => readFileSync(resolve(root,path),'utf8');
@@ -25,10 +27,17 @@ if (process.argv.includes('--sync')) {
   writeFileSync(resolve(root,'dist/index.html'),html);
   for (const path of ['editor.html','puzzle.json',
       'src/editor/app.mjs','src/editor/model.mjs','src/editor/motion.mjs','src/generator/words.mjs',
-      'src/core/kana.mjs','src/core/puzzle.mjs']) {
+      'src/core/kana.mjs','src/core/puzzle.mjs',
+      'src/generator/lexicon.mjs','src/generator/auto-fill.mjs']) {
     const target=resolve(root,'dist',path);
     mkdirSync(resolve(target,'..'),{recursive:true});
     copyFileSync(resolve(root,path),target);
   }
-  console.log('Built validated player and editable studio in dist/');
+  // Static deployment contains only curated, validated vocabulary, not candidates.
+  const rows=parseTsv(read('data/lexicon/approved_lexicon.tsv'));
+  const review=validateRecords(rows,{approved:true});
+  if(review.errors.length)throw new Error('Curated lexicon validation failed: '+review.errors.slice(0,5).join('; '));
+  mkdirSync(resolve(root,'dist/data'),{recursive:true});
+  writeFileSync(resolve(root,'dist/data/lexicon.json'),JSON.stringify(lexiconPayload(rows)));
+  console.log('Built validated player, studio and '+rows.length+' curated senses in dist/');
 }
