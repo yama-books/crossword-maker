@@ -38,3 +38,30 @@ export function lexiconPayload(rows) {
     clue:row.clue,category:row.category,difficulty:Number(row.difficulty)
   }))};
 }
+
+/**
+ * Required entries may be provided as kana readings or exact displayed
+ * Japanese terms (e.g. 図書館). Ambiguous surfaces require an explicit reading.
+ */
+export function resolveRequiredWords(raw,records){
+  if(!Array.isArray(raw))throw new TypeError('必須語は配列で指定してください。');
+  const result=[];
+  for(const value of raw){
+    const term=String(value??'').trim();
+    if(!term)continue;
+    let answer='';
+    try{
+      answer=normalizeKana(term,{strict:true});
+      if(!/^[ァ-ヴー]+$/u.test(answer))answer='';
+    }catch{}
+    if(!answer){
+      const matches=new Set(records.filter(x=>x.surface===term).map(x=>x.answer??x.normalized));
+      if(!matches.size)throw new Error('「'+term+'」は辞書にありません。読みをひらがなで入力してください。');
+      if(matches.size!==1)throw new Error('「'+term+'」には複数の読みがあります。ひらがなで指定してください。');
+      answer=[...matches][0];
+    }
+    result.push(answer);
+  }
+  if(new Set(result).size!==result.length)throw new Error('必須語が重複しています。');
+  return result;
+}
