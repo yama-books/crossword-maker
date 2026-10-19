@@ -37,7 +37,6 @@ function stopMotion(){
  board.classList.remove('motion');
  board.removeAttribute('data-motion');
  board.style.removeProperty('--motion');
- $('board-stage').removeAttribute('data-reveal');
 }
 for(const mode of MOTIONS){
  const option=document.createElement('option');
@@ -116,7 +115,7 @@ function handleCellClick(r,c){
 }
 function showMotion(){
  stopMotion();
- const board=$('board'),stage=$('board-stage');
+ const board=$('board');
  const rows=draft.grid.length,cols=[...draft.grid[0]].length;
  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches??false;
  const chosen=chooseMotion({rows,cols,requested:$('motion-select').value,
@@ -134,7 +133,6 @@ function showMotion(){
   cell.style.setProperty('--delay',delayForCell(chosen.id,r,c,rows,cols)+'ms');
  }
  void board.offsetWidth;
- if(chosen.id==='center-y'||chosen.id==='center-x')stage.dataset.reveal=chosen.id;
  board.classList.add('motion');
  motionTimer=setTimeout(stopMotion,chosen.duration+35);
 }
