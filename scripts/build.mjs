@@ -28,7 +28,7 @@ if (process.argv.includes('--sync')) {
   for (const path of ['editor.html','puzzle.json',
       'src/editor/app.mjs','src/editor/model.mjs','src/editor/motion.mjs','src/generator/words.mjs',
       'src/core/kana.mjs','src/core/puzzle.mjs',
-      'src/generator/lexicon.mjs','src/generator/auto-fill.mjs']) {
+      'src/generator/lexicon.mjs','src/generator/auto-fill.mjs','src/generator/auto-worker.mjs']) {
     const target=resolve(root,'dist',path);
     mkdirSync(resolve(target,'..'),{recursive:true});
     copyFileSync(resolve(root,path),target);
