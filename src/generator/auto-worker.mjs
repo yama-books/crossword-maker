@@ -1,5 +1,6 @@
 import {fillCrossword,generateCompleteCrossword} from './auto-fill.mjs';
 import {extractSlots,validatePuzzle} from '../core/puzzle.mjs';
+import {resolveRequiredWords} from './lexicon.mjs';
 
 let cachedEntries=null;
 async function loadEntries(){
@@ -15,7 +16,8 @@ self.addEventListener('message',async event=>{
   const {id,mode,grid,required=[],difficulty=2,title='クロスワード',clues={}}=event.data??{};
   try {
     const entries=await loadEntries();
-    const request={entries,required,difficulty,title,seed:20261019,maxNodes:22000};
+    const normalizedRequired=resolveRequiredWords(required,entries);
+    const request={entries,required:normalizedRequired,difficulty,title,seed:20261019,maxNodes:22000};
     const result=mode==='new'?generateCompleteCrossword(request):
       mode==='fill'?fillCrossword({...request,grid}):{status:'invalid_mode',reason:'操作の種類が不明です。'};
     // A manually authored clue for a fully fixed slot must not be lost.
