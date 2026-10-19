@@ -93,55 +93,29 @@ button{cursor:pointer;touch-action:manipulation}
 .board.motion[data-motion="pixel"] .cell{animation-timing-function:steps(5,end)}
 @keyframes cw-diagonal{0%{opacity:0;transform:translate(-15px,-12px) scale(.78)}75%{opacity:1;transform:translate(1px,1px) scale(1.02)}100%{opacity:1;transform:none}}
 @keyframes cw-checker{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
-/* Symmetric full-board reveals: clip the entire grid as one rigid picture.
-   Never translate rows/cells independently, which breaks alignment and looks uneven.
-   The dividing line belongs to the UNCLIPPED board-stage, not the clipped board. */
+/* Symmetric full-board reveals. Only the aperture expands from the center.
+   No decorative center line, initial hold, or per-cell motion. */
 @keyframes cw-center-y{
-  0%,12%{clip-path:inset(50% 0 50% 0)}
+  from{clip-path:inset(50% 0 50% 0)}
   100%{clip-path:inset(0 0 0 0)}
 }
 @keyframes cw-center-x{
-  0%,12%{clip-path:inset(0 50% 0 50%)}
+  from{clip-path:inset(0 50% 0 50%)}
   100%{clip-path:inset(0 0 0 0)}
 }
 @keyframes cw-iris{from{clip-path:circle(0% at center)}to{clip-path:circle(72% at center)}}
-@keyframes cw-center-rule{
-  0%{transform:scaleX(0);opacity:0}
-  18%{transform:scaleX(1);opacity:1}
-  72%{transform:scaleX(1);opacity:1}
-  100%{transform:scaleX(1);opacity:0}
-}
-@keyframes cw-side-rule{
-  0%{transform:scaleY(0);opacity:0}
-  18%{transform:scaleY(1);opacity:1}
-  72%{transform:scaleY(1);opacity:1}
-  100%{transform:scaleY(1);opacity:0}
-}
 .board.motion[data-motion="center-y"]{animation:cw-center-y .7s cubic-bezier(.22,.75,.28,1) both}
 .board.motion[data-motion="center-x"]{animation:cw-center-x .7s cubic-bezier(.22,.75,.28,1) both}
 .board.motion[data-motion="iris"]{animation:cw-iris .7s cubic-bezier(.22,.75,.28,1) both}
 .board.motion:is([data-motion="center-y"],[data-motion="center-x"],[data-motion="iris"]) .cell{animation:none}
-.board-stage[data-reveal="center-y"]::after,
-.board-stage[data-reveal="center-x"]::after{
-  content:"";position:absolute;z-index:6;pointer-events:none;
-  background:#d7a361;opacity:0
-}
-.board-stage[data-reveal="center-y"]::after{
-  height:3px;left:5%;width:90%;top:calc(50% - 1.5px);
-  transform-origin:center;animation:cw-center-rule .7s ease-in-out both
-}
-.board-stage[data-reveal="center-x"]::after{
-  width:3px;top:5%;height:90%;left:calc(50% - 1.5px);
-  transform-origin:center;animation:cw-side-rule .7s ease-in-out both
-}
 @keyframes cw-notice-enter{from{opacity:.6;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes cw-notice-nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}60%{transform:translateX(3px)}}
 #message{min-height:18px}
 #message.notice-pop{animation:cw-notice-enter .22s ease-out both;color:#376c50;font-weight:750}
 #message.notice-warn{animation:cw-notice-nudge .19s ease-out both;color:#8f5639}
 @media(max-width:690px){.motion-controls{width:100%;justify-content:space-between}.motion-controls select{max-width:200px}.board-stage{width:min(100%,460px)}}
-@media(prefers-reduced-motion:reduce){.board.motion,.board.motion .cell,.board-stage::after,#message{animation:none!important;clip-path:none!important;transform:none!important}.board-stage::after{display:none!important}}
-@media print{.board.motion,.board.motion .cell,.board-stage::after{animation:none!important;clip-path:none!important;transform:none!important}.board-stage::after{display:none!important}.board-stage{width:130mm}.motion-caption{display:none!important}}
+@media(prefers-reduced-motion:reduce){.board.motion,.board.motion .cell,#message{animation:none!important;clip-path:none!important;transform:none!important}}
+@media print{.board.motion,.board.motion .cell{animation:none!important;clip-path:none!important;transform:none!important}.board-stage{width:130mm}.motion-caption{display:none!important}}
 
 @media(max-width:1080px){.layout{grid-template-columns:minmax(200px,270px) 1fr}.result-panel{grid-column:1/-1}.clues{grid-template-columns:1fr 1fr}}
 @media(max-width:690px){.wrap{padding:16px 12px 40px}.layout{display:flex;flex-direction:column;gap:12px}.panel{width:100%;padding:16px}.board-panel{order:0}.tools-panel{order:1}.result-panel{order:2}.board{width:min(100%,460px)}.cell{font-size:clamp(11px,4.5vw,26px)}.clues{grid-template-columns:1fr}.topline{font-size:10px}}
