@@ -22,6 +22,7 @@ const SAMPLE_WORDS=[
 let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
 let composing=false, lastMotion=null, motionTimer=null;
 let pendingAuto=null, runningAutoWorker=null;
+let autoSeed=20261019, lastAutoMode='new';
 
 function say(message,tone=''){
  const target=$('message');
@@ -380,8 +381,11 @@ function setAutoBusy(busy){
   $('auto-fill').disabled=busy;
   $('auto-cancel').hidden=!busy;
 }
-function runAutoFill(mode){
+function runAutoFill(mode,{retry=false}={}){
   if(runningAutoWorker)return;
+  if(retry)autoSeed=(autoSeed+1)>>>0;
+  else autoSeed=20261019;
+  lastAutoMode=mode;
   const required=mode==='new' ? $('auto-required').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean) : [];
   const status=$('auto-status');
   clearPendingAuto();
@@ -435,10 +439,11 @@ function runAutoFill(mode){
     status.textContent='自動生成でエラーが発生しました。操作中の盤面は変更していません。';
   };
   worker.postMessage({id:1,mode,grid:draft.grid.slice(),clues:{...draft.clues},
-    required,difficulty:Number($('auto-difficulty').value),title:draft.title});
+    required,difficulty:Number($('auto-difficulty').value),title:draft.title,seed:autoSeed});
 }
 $('auto-start').addEventListener('click',()=>runAutoFill('new'));
 $('auto-fill').addEventListener('click',()=>runAutoFill('fill'));
+$('auto-retry').addEventListener('click',()=>runAutoFill(lastAutoMode,{retry:true}));
 $('auto-cancel').addEventListener('click',()=>{
   if(runningAutoWorker){runningAutoWorker.terminate();runningAutoWorker=null;}
   setAutoBusy(false);
