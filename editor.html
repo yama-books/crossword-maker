@@ -167,13 +167,14 @@ button{cursor:pointer;touch-action:manipulation}
       <h3>辞書から完成問題をつくる</h3>
       <p class="help">登録済みの2,000語義を使い、すべてのタテ・ヨコの語枠が成立する盤面を探します。途中入力した文字・黒マスは、残りを埋めるときには変更しません。</p>
       <label class="field" for="auto-required">必ず入れたいことば（1行に1語、登録済み漢字も可）
-        <textarea class="input" id="auto-required" rows="3" placeholder="としょかん&#10;（空欄でもOK）" spellcheck="false" autocomplete="off"></textarea>
+        <textarea class="input" id="auto-required" rows="3" placeholder="必ず入れる語（1行に1語）" spellcheck="false" autocomplete="off">としょかん
+がっこう</textarea>
       </label>
       <label class="field" for="auto-difficulty" style="margin-top:10px">難易度
         <select id="auto-difficulty" class="input">
           <option value="1">やさしい</option>
-          <option value="2" selected>ふつう</option>
-          <option value="3">難しい語も使う</option>
+          <option value="2">ふつう</option>
+          <option value="3" selected>むずかしい</option>
         </select>
       </label>
       <div class="button-grid" style="margin-top:11px">
