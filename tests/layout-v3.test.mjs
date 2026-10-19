@@ -16,6 +16,12 @@ test('new responsive editor keeps the board and tools together',()=>{
   assert.ok(html.indexOf('id="tool-letter"')<html.indexOf('id="auto-start"'));
   assert.ok(html.includes('class="collapse-panel"'));
   assert.ok(html.includes('id="auto-fill"'));
+  assert.ok(html.includes('id="auto-retry"'));
+  const worker=read('src/generator/auto-worker.mjs');
+  const app=read('src/editor/app.mjs');
+  assert.match(app,/seed:autoSeed/);
+  assert.match(app,/retry:true/);
+  assert.match(worker,/seed,maxNodes:22000/);
   assert.ok(html.includes('としょかん\nがっこう</textarea>'));
   assert.match(html,/<option value="3" selected>むずかしい<\/option>/);
   assert.match(css,/grid-template-areas:"board create" "review review"/);
