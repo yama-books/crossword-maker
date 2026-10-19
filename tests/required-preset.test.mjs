@@ -11,7 +11,7 @@ test('APP-002 initial preset shows both required words and difficult=3',()=>{
   const html=read('editor.html');
   assert.match(html,/id="auto-required"[^>]*>としょかん\s+がっこう<\/textarea>/);
   assert.match(html,/<option value="3" selected>むずかしい<\/option>/);
-  assert.match(html,/id="auto-start"[^>]*>✦ 5×5を自動生成/);
+  assert.match(html,/id="auto-start"[^>]*>✦ 最初から作る/);
 });
 test('APP-002 user-preset generation never claims success without both whole answers',()=>{
   const entries=lexiconPayload(parseTsv(read('data/lexicon/approved_lexicon.tsv'))).entries;
