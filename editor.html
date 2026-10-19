@@ -146,6 +146,29 @@ button{cursor:pointer;touch-action:manipulation}
         <p class="help">盤面サイズを指定して「新しい盤面」。途中の作業は自動保存されます。</p>
       </div>
       <div class="soft-line"></div>
+      <section class="stack" aria-label="辞書からクロスワードを自動生成">
+        <div class="meta">02 / DICTIONARY · EXPERIMENT</div>
+        <h3>辞書から完成問題をつくる</h3>
+        <p class="help">必須語を指定し、5×5の全語枠を登録済み辞書で埋めます。完成しない場合は今の編集内容を変更しません。</p>
+        <label class="field" for="auto-required">必ず入れることば（1行に1語）
+          <textarea id="auto-required" class="input" rows="2" spellcheck="false" autocorrect="off" style="resize:vertical;min-height:78px;font-size:16px" aria-label="自動生成の必須語">としょかん
+がっこう</textarea>
+        </label>
+        <label class="field" for="auto-difficulty">難しさ
+          <select id="auto-difficulty">
+            <option value="1">やさしい</option>
+            <option value="2">ふつう</option>
+            <option value="3" selected>むずかしい</option>
+          </select>
+        </label>
+        <div class="button-grid">
+          <button class="block-btn primary" id="auto-generate" type="button">✦ 5×5を自動生成</button>
+          <button class="block-btn" id="auto-cancel" type="button" hidden>生成を中止</button>
+        </div>
+        <p class="word-result" id="auto-result" role="status" aria-live="polite" hidden></p>
+        <p class="help">初期版は5×5のみ。登録語があっても完成盤面を必ず作れるわけではありません。難易度は候補の優先順であり、必須語を除外しません。</p>
+      </section>
+      <div class="soft-line"></div>
       <div class="meta">02 / WORDS FIRST · BETA</div>
       <h3>単語から盤面を生成</h3>
       <p class="help">1行につき「表示名 | よみ | カギ」。ひらがなの語なら「よみ | カギ」でも入力できます。</p>
