@@ -221,6 +221,80 @@ function render(){
   for(const slot of slots)target.append(makeClueRow(slot));
  }
 }
+// G2: Experimental curated-dictionary 5x5 generator. It never overwrites a
+// user draft until a fully validated completion is returned and accepted.
+let autoWorker=null,autoRequest=0,autoSeed=20261019;
+function autoBusy(busy){
+  $('auto-generate').disabled=busy;
+  $('auto-generate').textContent=busy?'辞書から探索中…':'✦ 5×5を自動生成';
+  $('auto-cancel').hidden=!busy;
+}
+function autoSay(message,warning=false){
+  const target=$('auto-result');
+  target.hidden=false;
+  target.textContent=message;
+  target.classList.toggle('warning',warning);
+}
+function autoStop(){
+  if(autoWorker){autoWorker.terminate();autoWorker=null;}
+  autoBusy(false);
+}
+$('auto-cancel').addEventListener('click',()=>{
+  ++autoRequest;
+  autoStop();
+  autoSay('生成を中止しました。編集中の盤面は変更していません。');
+});
+$('auto-generate').addEventListener('click',()=>{
+  const requested=$('auto-required').value.split(/[\n、，,]+/u).map(x=>x.trim()).filter(Boolean);
+  if(requested.length>5){
+    autoSay('必須語は初期版では5語までです。',true);return;
+  }
+  let normalized;
+  try{
+    normalized=requested.map(w=>normalizeKana(w,{strict:true}));
+    if(new Set(normalized).size!==normalized.length || normalized.some(w=>w.length<2||w.length>5||/^[ンー]/u.test(w)))
+      throw new Error('必須語は重複なしの2〜5マスのカナにしてください。');
+  }catch(error){autoSay('必須語を確認してください：'+error.message,true);return;}
+  if(typeof Worker==='undefined'){autoSay('このブラウザでは生成用のWorkerを利用できません。',true);return;}
+  autoStop();
+  const request=++autoRequest;
+  autoBusy(true);
+  autoSay('辞書を読み込み、5×5の完成盤面を探索中です。編集中の盤面は保持しています。');
+  try{
+    autoWorker=new Worker(new URL('../generator/auto-worker.mjs',import.meta.url),{type:'module'});
+    autoWorker.addEventListener('message',({data})=>{
+      if(request!==autoRequest||data.id!==request)return;
+      autoStop();
+      if(data.type==='error'){autoSay('生成エラー：'+data.message,true);return;}
+      const result=data.result;
+      if(result.status!=='success'){
+        autoSay((result.reason||'完成盤面が見つかりませんでした。')+
+          '（状態：'+result.status+'）。元の盤面は変更していません。',true);
+        return;
+      }
+      try{
+        // Never allow a direct UI commit without the shared M1 validation.
+        const complete=fromPuzzle(result.puzzle);
+        if(!window.confirm('5×5の完成盤面が見つかりました。現在の編集内容を置き換えますか？ Undoで戻せます。')){
+          autoSay('完成案は採用しませんでした。元の盤面を保持しています。');return;
+        }
+        selected={r:0,c:0};
+        commit(complete,{motion:true});
+        autoSay('5×5の完成問題を採用しました。必須語'+
+          (result.matchedRequired?.length||0)+'件、探索'+result.totalNodes+'回。');
+        say('辞書の完成盤面を編集用に取り込みました。','success');
+      }catch(error){autoSay('採用できませんでした：'+error.message,true);}
+    });
+    autoWorker.addEventListener('error',event=>{
+      if(request!==autoRequest)return;
+      autoStop();
+      autoSay('生成処理を開始できませんでした：'+(event.message||'Workerエラー'),true);
+    });
+    autoWorker.postMessage({type:'generate',id:request,required:requested,
+      difficulty:Number($('auto-difficulty').value),seed:autoSeed++});
+  }catch(error){autoStop();autoSay('生成を開始できませんでした：'+error.message,true);}
+});
+
 $('word-source').value=draft.generation?.source||'';
 $('word-sample').addEventListener('click',()=>{
  if($('word-source').value.trim() &&
