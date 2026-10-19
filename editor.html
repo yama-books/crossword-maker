@@ -61,6 +61,9 @@ button{cursor:pointer;touch-action:manipulation}
 .word-source{min-height:180px;line-height:1.72;font-size:12px;resize:vertical;overflow:auto}
 .word-result{font-size:12px;line-height:1.7;margin:9px 0 0;padding:10px;border-radius:9px;background:#f0f6f0;color:#365a46}
 .word-result.warning{background:#fff5e7;color:#855c31}
+.auto-preview-grid{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:2px;margin:9px auto;max-width:280px;border:2px solid #506459;background:#506459}
+.auto-preview-cell{aspect-ratio:1;display:grid;place-items:center;background:#fff;color:#294638;font-size:clamp(10px,3vw,19px);font-weight:800;line-height:1}
+.auto-preview-cell.black{background:#43564d}
 .unplaced{font-size:11px;line-height:1.7;margin:5px 0 0;padding-left:19px;color:#815b37}
 .issues{margin:10px 0 0;padding-left:19px;font-size:11px;color:#8b5b39;max-height:140px;overflow:auto;overflow-wrap:anywhere}
 .clues{display:grid;gap:10px}
@@ -159,6 +162,32 @@ button{cursor:pointer;touch-action:manipulation}
       <div id="word-result" class="word-result" role="status" aria-live="polite" hidden></div>
       <ul id="unplaced-words" class="unplaced" aria-label="配置できなかった単語"></ul>
       <p class="help">配置できた語も、標準の黒マス配置などの検証で未完成となる場合があります。完成問題には盤面チェックが必要です。</p>
+      <div class="soft-line"></div>
+      <div class="meta">03 / DICTIONARY AUTOFILL · BETA</div>
+      <h3>辞書から完成問題をつくる</h3>
+      <p class="help">登録済みの2,000語義を使い、すべてのタテ・ヨコの語枠が成立する盤面を探します。途中入力した文字・黒マスは、残りを埋めるときには変更しません。</p>
+      <label class="field" for="auto-required">必ず入れたいことば（1行に1語、登録済み漢字も可）
+        <textarea class="input" id="auto-required" rows="3" placeholder="としょかん&#10;（空欄でもOK）" spellcheck="false" autocomplete="off"></textarea>
+      </label>
+      <label class="field" for="auto-difficulty" style="margin-top:10px">難易度
+        <select id="auto-difficulty" class="input">
+          <option value="1">やさしい</option>
+          <option value="2" selected>ふつう</option>
+          <option value="3">難しい語も使う</option>
+        </select>
+      </label>
+      <div class="button-grid" style="margin-top:11px">
+        <button class="block-btn primary" type="button" id="auto-start">✦ 5×5を自動生成</button>
+        <button class="block-btn" type="button" id="auto-fill">□ 残りを埋める</button>
+      </div>
+      <button class="block-btn" type="button" id="auto-cancel" hidden style="margin-top:9px;width:100%">探索を中止</button>
+      <div id="auto-status" class="word-result" role="status" aria-live="polite" hidden></div>
+      <div id="auto-preview" hidden>
+        <p class="help" style="margin-top:9px">完成候補（まだ盤面には反映していません）</p>
+        <div id="auto-preview-grid" class="auto-preview-grid" aria-label="生成された盤面のプレビュー"></div>
+        <button class="block-btn primary" id="auto-apply" type="button" style="margin-top:10px;width:100%" disabled>この盤面を採用</button>
+      </div>
+      <p class="help">生成は5×5から開始。今の盤面を埋める場合は黒マスの形を保持します。成立しない場合、元の盤面は変更されません。</p>
       <div class="soft-line"></div>
       <h3>編集ツール</h3>
       <div class="button-grid">
