@@ -35,7 +35,7 @@ export function auditKogoClues(records,lexicon){
       issues.push(where+': 問題文に解答カナをそのまま表示');
     if(typeof rec.explanation!=='string'||rec.explanation.length<7)issues.push(where+': 解説が不十分');
     if(typeof rec.work!=='string'||!rec.work)issues.push(where+': 作品情報が欠落');
-    if(typeof rec.source_url!=='string'||!/^https:\/\/(ja\.wikisource\.org|kotobank\.jp|ndlsearch\.ndl\.go\.jp)\//.test(rec.source_url))
+    if(typeof rec.source_url!=='string'||!/^https:\/\/(ja\.wikisource\.org|kotobank\.jp|ndlsearch\.ndl\.go\.jp|www2\.yamanashi-ken\.ac\.jp|sybrma\.sakura\.ne\.jp)\//.test(rec.source_url))
       issues.push(where+': 出典URLが不正');
     if(typeof rec.source_excerpt!=='string'||rec.source_excerpt.length<2||rec.source_excerpt.length>55)
       issues.push(where+': 確認した原文が長すぎるか欠落');
@@ -66,9 +66,15 @@ export function auditKogoClues(records,lexicon){
       if(typeof rec.dictionary_reference_url!=='string'||!rec.dictionary_reference_url.startsWith('https://'))
         issues.push(where+': 中心義の辞書参照先がありません');
     }
-    if(rec.blank_not_char_count!==true)
-      issues.push(where+': 穴埋め記号は文字数を表すものではない旨が必要');
-    // Never enforce placeholder count equal to the answer length.
+    // The circle placeholders are actual crossword cells; words with small
+    // kana are checked against the already-normalized grid answer.
+    const circleCount=[...rec.prompt].filter(ch=>ch==='〇').length;
+    if(rec.prompt_style!=='crossword_compact_v1')
+      issues.push(where+': 簡潔なクロスワード文体が設定されていません');
+    if(circleCount!==[...rec.answer].length || rec.circle_count!==circleCount)
+      issues.push(where+': 〇の数と盤面解答のマス数が一致しません');
+    if(/に入る(?:言葉|語)|中心的な意味|答えよう|空欄に|現代語でどう言い換える|四文字のカナで答える/.test(rec.prompt))
+      issues.push(where+': 説明的な問題文です。短いカギに改稿してください');
   }
   const meaningQuestions=records.filter(x=>x?.question_type==='modern_meaning');
   const ready=records.filter(x=>x?.review_status==='human_checked');
