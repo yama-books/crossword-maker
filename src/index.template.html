@@ -48,6 +48,7 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
 .clue-num{display:inline-block;width:22px;min-width:22px;font-weight:850;color:var(--accent);font-size:13px}
 .clue-text{flex:1}
 .clue-len{font-size:12px;color:var(--muted);white-space:nowrap}
+.share-warning{font-size:13px;padding:14px;background:#fff0db;border:1px solid #e6bea0;border-radius:10px;color:#85522c;margin:8px 0 20px}
 .footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
 @media(max-width:740px){.wrap{padding:19px 13px 42px}.layout{grid-template-columns:1fr;gap:15px}.board-panel,.clue-panel{padding:16px}.board{max-width:480px;margin:0 auto}.clues{grid-template-columns:1fr}.sq input{font-size:clamp(21px,6vw,34px)}.num{font-size:11px}.topline{font-size:10px}}
 @media print{
@@ -69,16 +70,17 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
 <body>
 <div class="wrap">
  <header>
-  <div class="topline"><span>JAPANESE CROSSWORD / PROTOTYPE 01</span><span class="pill">6 × 6 ・ 全14問</span></div>
+  <div class="topline"><span>クロスワード工房 · とく</span><span class="pill" id="puzzle-size">6 × 6 ・ 全14問</span></div>
   <h1>学校生活と身近なことば</h1>
   <p class="lead">タテ・ヨコのカギを解いて、すべての白マスを埋めましょう。小さい「ッ・ャ・ュ・ョ」は大きい文字で入れます。</p>
   <a class="edit-link" href="./editor.html">✦ クロスワードをつくる →</a>
+  <p id="shared-warning" class="share-warning" role="alert" hidden></p>
  </header>
  <main class="layout">
   <section class="panel board-panel" aria-label="クロスワードの盤面">
    <div class="progress-label"><span>進み具合</span><span id="progress-text">0 / 26 マス</span></div>
    <div class="progressbar" aria-hidden="true"><span id="progress-fill"></span></div>
-   <div class="board" id="board" role="group" aria-label="6行6列のクロスワード"></div>
+   <div class="board" id="board" role="group" aria-label="クロスワード"></div>
    <div class="selected-clue" id="selected-clue" aria-live="polite"></div>
    <div class="actions">
      <button class="primary" id="check">答え合わせ</button>
@@ -96,18 +98,35 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
 </div>
 <script>
 'use strict';
-const puzzle=/*__PUZZLE_DATA__*/;
+/*__KANA_CORE__*/
+/*__PUZZLE_CORE__*/
+/*__SHARE_CORE__*/
+const originalPuzzle=/*__PUZZLE_DATA__*/;
+const hasShare=location.hash.startsWith('#p=');
+let shareError='';
+let puzzle=originalPuzzle;
+if(hasShare){
+ try{puzzle=decodeSharedPuzzle(location.hash);}
+ catch(error){shareError='共有された問題を開けませんでした。'+String(error?.message||'リンクをご確認ください。');}
+}
+const progressKey=hasShare&&!shareError?sharedProgressKey(location.hash):'jp-crossword-proto-v1';
 const entries=puzzle.entries;
-const M=puzzle.size;
+if(!shareError){document.querySelector('h1').textContent=puzzle.title||'クロスワード';}
+document.getElementById('puzzle-size').textContent=(puzzle.cols??puzzle.size??puzzle.grid[0].length)+' × '+(puzzle.rows??puzzle.size??puzzle.grid.length)+' ・ 全'+entries.length+'問';
+if(shareError){const warning=document.getElementById('shared-warning');warning.hidden=false;warning.textContent=shareError+' 以下には元の例題を表示しています。';}
+const ROWS=puzzle.rows??puzzle.grid.length;
+const COLS=puzzle.cols??puzzle.size??[...puzzle.grid[0]].length;
 const cells={};
 const byCoord=(r,c)=>`${r},${c}`;
 const wordsFor=(r,c)=>entries.filter(e=>e.cells.some(x=>x[0]===r&&x[1]===c));
 let selected=entries.find(e=>e.direction==='A');
 let selectedAt=byCoord(...selected.start);
 let values={};let helped=new Set();let incorrect=new Set();let showingAnswers=false;let composing=false;
-try{values=JSON.parse(localStorage.getItem('jp-crossword-proto-v1'))||{}}catch(_){values={}}
+try{values=JSON.parse(localStorage.getItem(progressKey))||{}}catch(_){values={}}
 const grid=document.getElementById('board');
-for(let r=0;r<M;r++)for(let c=0;c<M;c++){
+grid.style.gridTemplateColumns='repeat('+COLS+',minmax(0,1fr))';
+grid.setAttribute('aria-label',ROWS+'行'+COLS+'列のクロスワード');
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
  const k=byCoord(r,c),ch=puzzle.grid[r][c];
  const box=document.createElement('div');box.className='sq'+(ch==='■'?' black':'');box.dataset.coord=k;
  if(ch!=='■'){
@@ -137,7 +156,6 @@ for(const [dir,heading] of groups){
  }
  section.append(list);document.getElementById('clue-lists').append(section);
 }
-/*__KANA_CORE__*/
 const katakana=(text)=>normalizeKana(text);
 function chooseCell(r,c,click){
  const k=byCoord(r,c);const opts=wordsFor(r,c);if(!opts.length)return;
@@ -160,7 +178,7 @@ function paint(){
  document.getElementById('progress-fill').style.width=`${used/Object.keys(cells).length*100}%`;
  document.getElementById('reveal').textContent=showingAnswers?'解答を隠す':'解答を表示';
 }
-function save(){try{localStorage.setItem('jp-crossword-proto-v1',JSON.stringify(values))}catch(_){}}
+function save(){try{localStorage.setItem(progressKey,JSON.stringify(values))}catch(_){}}
 function moveInEntry(k,offset){
  const index=selected.cells.findIndex(x=>byCoord(...x)===k);
  if(index<0)return;
