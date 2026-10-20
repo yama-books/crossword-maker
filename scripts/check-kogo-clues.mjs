@@ -48,8 +48,27 @@ export function auditKogoClues(records,lexicon){
       if(!entry || entry.normalized!==rec.answer || rec.lexicon_link_status!=='linked')
         issues.push(where+': 解答語IDとカナが不一致');
     }else if(rec.lexicon_link_status!=='unlinked')issues.push(where+': 未リンクなのにリンク済み扱い');
-    if(['KOGO-CLUE-019','KOGO-CLUE-020'].includes(rec.clue_id)&&rec.review_status!=='hold')
-      issues.push(where+': 「いと」の現代語訳は複数正答のため保留必須');
+    // Polysemy is a teaching target, not an automatic reason for exclusion.
+    // The grid uses one spelling while the lesson retains acceptable synonyms.
+    if(rec.meaning_policy!=null || rec.question_type==='modern_meaning'){
+      if(!['core_dictionary_sense','representative_contextual_paraphrase','contextual_sense'].includes(rec.meaning_policy))
+        issues.push(where+': 意味問題には中心義または文脈を指定してください');
+      if(typeof rec.target_sense!=='string'||rec.target_sense.trim().length<5)
+        issues.push(where+': 対象とする意味の説明がありません');
+      if(!Array.isArray(rec.acceptable_answer_readings) ||
+         rec.acceptable_answer_readings.length<1 ||
+         !rec.acceptable_answer_readings.includes(rec.answer) ||
+         new Set(rec.acceptable_answer_readings).size!==rec.acceptable_answer_readings.length ||
+         rec.acceptable_answer_readings.some(x=>typeof x!=='string'||!/^([ァ-ヴー]{2,15})$/u.test(x)))
+        issues.push(where+': 同義の許容解答に盤面解答がありません');
+      if(typeof rec.meaning_group_id!=='string'||!rec.meaning_group_id.trim())
+        issues.push(where+': 意味問題のグループIDがありません');
+      if(typeof rec.dictionary_reference_url!=='string'||!rec.dictionary_reference_url.startsWith('https://'))
+        issues.push(where+': 中心義の辞書参照先がありません');
+    }
+    if(rec.blank_not_char_count!==true)
+      issues.push(where+': 穴埋め記号は文字数を表すものではない旨が必要');
+    // Never enforce placeholder count equal to the answer length.
   }
   const meaningQuestions=records.filter(x=>x?.question_type==='modern_meaning');
   const ready=records.filter(x=>x?.review_status==='human_checked');
