@@ -17,6 +17,8 @@ jobs:
           node-version: '22'
       - name: Validate puzzle rules and existing game
         run: npm test
+      - name: Check classical clue bank and review states
+        run: npm run kogo:check
       - name: Check generated player is up to date
         run: npm run check
       - name: Build static site

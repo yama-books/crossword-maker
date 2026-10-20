@@ -9,7 +9,8 @@
     "check": "node scripts/build.mjs --check",
     "sync": "node scripts/build.mjs --sync",
     "build": "node scripts/build.mjs",
-    "lexicon:export": "node scripts/export-lexicon.mjs"
+    "lexicon:export": "node scripts/export-lexicon.mjs",
+    "kogo:check": "node scripts/check-kogo-clues.mjs"
   },
   "engines": {
     "node": ">=22"
