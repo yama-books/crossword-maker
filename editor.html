@@ -126,6 +126,7 @@ button{cursor:pointer;touch-action:manipulation}
 @media print{.topline,.heading,.tools-panel,.result-panel,.edit-tray,.board-foot,.footer,.block-btn{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}.layout{display:block}.panel{border:none;box-shadow:none}.board{width:130mm}.cell{font-size:16pt}.cell.black{background:#333!important;print-color-adjust:exact}}
 </style>
 <link rel="stylesheet" href="./src/editor/layout-v3.css">
+<link rel="stylesheet" href="./src/editor/ux-v4.css">
 </head>
 <body data-view="welcome">
 <div class="wrap">
@@ -172,7 +173,7 @@ button{cursor:pointer;touch-action:manipulation}
           <button class="block-btn" id="erase" type="button">消す</button>
         </div>
       </div>
-      <button class="block-btn primary board-fill-action" id="editor-fill-action" type="button">✦ 空いているマスを自動で埋める</button>
+      <button class="block-btn primary board-fill-action" id="editor-fill-action" type="button">✦ 空いているマスを自動で埋める</button><button class="block-btn board-fill-action" id="editor-cancel" type="button" hidden>探索を中止</button>
       <p id="message" class="help" role="status" aria-live="polite"></p>
       <details class="motion-toggle">
         <summary>登場アニメーション</summary>
