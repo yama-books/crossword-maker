@@ -8,15 +8,15 @@ const bank=readKogoClues(readFileSync(new URL('../data/learning/kogo_clues.jsonl
 const lex=parseTsv(readFileSync(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url),'utf8'));
 const byId=id=>bank.find(r=>r.clue_id===id);
 
-test('K1: 30 sourced candidates have valid kana, IDs, status, metadata, and link targets',()=>{
+test('K3: 66 sourced candidates have valid kana, IDs, status, metadata, and link targets',()=>{
  const r=auditKogoClues(bank,lex);
  assert.deepEqual(r.issues,[]);
  assert.equal(r.ok,true);
- assert.equal(r.total,30);
+ assert.equal(r.total,66);
  assert.equal(r.ready,0); // no teacher has yet approved these for automatic selection
  assert.equal(r.holds,1);
  assert.equal(r.linked,10);
- assert.deepEqual(Object.values(r.types).reduce((a,b)=>a+b,0),30);
+ assert.deepEqual(Object.values(r.types).reduce((a,b)=>a+b,0),66);
  assert.ok(new Set(bank.map(x=>x.answer)).size<bank.length); // one answer, multiple classical clues
 });
 test('K2: central sense of いと supports multiple legitimate translations',()=>{
@@ -69,12 +69,18 @@ test('K1: incomplete provenance or incorrect dictionary mapping is not accepted'
  assert.equal(auditKogoClues(wrong,lex).ok,false);
 });
 
-test('K2: a single cloze marker never implies the number of kana in the answer',()=>{
+test('K3: concise circle placeholders match exactly the normalized crossword answer length',()=>{
  const spring=byId('KOGO-CLUE-001');
  assert.equal(spring.answer,'アケボノ');
- assert.match(spring.prompt,/（　）/);
- assert.equal(spring.blank_not_char_count,true);
+ assert.match(spring.prompt,/〇〇〇〇/);
+ for(const rec of bank){
+   assert.equal([...rec.prompt].filter(c=>c==='〇').length,[...rec.answer].length,rec.clue_id);
+   assert.equal(rec.prompt_style,'crossword_compact_v1',rec.clue_id);
+ }
  assert.equal(auditKogoClues(bank,lex).ok,true);
+ const invalid=structuredClone(bank);
+ invalid[0].prompt=invalid[0].prompt.replace('〇','');
+ assert.ok(auditKogoClues(invalid,lex).issues.some(x=>x.includes('〇の数')));
 });
 test('K2: only text-specific source uncertainty remains held; polysemy itself does not block study',()=>{
  assert.deepEqual(bank.filter(x=>x.review_status==='hold').map(x=>x.clue_id),['KOGO-CLUE-024']);
@@ -82,4 +88,25 @@ test('K2: only text-specific source uncertainty remains held; polysemy itself do
    assert.equal(byId(id).review_status,'source_checked_candidate');
  }
  assert.equal(bank.filter(x=>x.review_status==='human_checked').length,0);
+});
+
+test('K3: six classic works represented, with multiple clues to the same answers',()=>{
+  for(const work of ['枕草子','徒然草','方丈記','竹取物語','平家物語','源氏物語']){
+    assert.ok(bank.some(x=>x.work===work),work);
+  }
+  assert.equal(bank[65].clue_id,'KOGO-CLUE-066');
+  assert.equal(byId('KOGO-CLUE-055').answer,'カワイイ');
+  assert.equal(byId('KOGO-CLUE-055').meaning_policy,'contextual_sense');
+  assert.deepEqual(byId('KOGO-CLUE-055').acceptable_answer_readings,['カワイイ','アイラシイ']);
+  assert.equal(byId('KOGO-CLUE-056').answer,'ギオンシヨウジヤ');
+  assert.equal(byId('KOGO-CLUE-062').answer,'ニヨウゴ');
+  assert.ok(bank.some(x=>x.answer==='ユウグレ'&&x.clue_id==='KOGO-CLUE-018'));
+});
+test('K3: forbid explanatory instructions and unchecked reference URLs',()=>{
+ const bad=structuredClone(bank);
+ bad[0].prompt='〇〇〇〇に入る言葉を答えよう';
+ assert.ok(auditKogoClues(bad,lex).issues.some(x=>x.includes('説明的')));
+ const reference=structuredClone(bank);
+ reference[50].source_url='https://unverified.example.invalid/';
+ assert.ok(auditKogoClues(reference,lex).issues.some(x=>x.includes('出典URL')));
 });
