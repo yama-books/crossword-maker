@@ -47,3 +47,12 @@ test('no new puzzle is generated with hidden preset words',()=>{
  assert.ok(app.includes("const required=mode==='new' ? $('auto-required').value"));
  assert.ok(app.includes("status.textContent='この組合せは、今回試した5×5の盤面では完成できませんでした。'"));
 });
+
+test('repeating the same generation request changes its seed, including after failure',()=>{
+ const app=read('src/editor/app.mjs');
+ assert.match(app,/let autoSeed=20261019, lastAutoMode='new', lastAutoSignature=''/);
+ assert.match(app,/signature===lastAutoSignature/);
+ assert.match(app,/autoSeed=\(autoSeed\+1\)>>>0/);
+ assert.match(app,/lastAutoSignature=signature/);
+ assert.match(app,/required,difficulty,title:draft.title,seed:autoSeed/);
+});
