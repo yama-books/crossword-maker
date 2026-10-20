@@ -18,7 +18,7 @@ test('complete sample puzzle can be shared and reconstructed without server stor
  assert.equal(validatePuzzle(restored).ok,true);
  assert.equal(restored.title,original.title);
  assert.deepEqual(restored.grid,original.grid);
- const clues=p=>p.entries.map(e=>({direction:e.direction,number:e.number,clue:e.clue,answer:e.answer}));
+ const clues=p=>p.entries.map(e=>({direction:e.direction,number:e.number,clue:e.clue,answer:e.answer})).sort((a,b)=>(a.number-b.number)||a.direction.localeCompare(b.direction));
  assert.deepEqual(clues(restored),clues(original));
  assert.equal(encodeSharedPuzzle(restored),fragment);
 });
