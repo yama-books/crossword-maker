@@ -22,8 +22,12 @@ test('new responsive editor keeps the board and tools together',()=>{
   assert.match(app,/seed:autoSeed/);
   assert.match(app,/retry:true/);
   assert.match(worker,/seed,maxNodes:22000/);
-  assert.ok(html.includes('としょかん\nがっこう</textarea>'));
-  assert.match(html,/<option value="3" selected>むずかしい<\/option>/);
+  assert.ok(html.includes('id="start-words"'));
+  assert.ok(html.includes('id="start-manual"'));
+  assert.ok(html.includes('id="start-resume"'));
+  assert.ok(html.includes('id="editor-fill-action"'));
+  assert.match(html,/id="auto-required"[^>]*><\/textarea>/);
+  assert.match(html,/<option value="2" selected>ふつう<\/option>/);
   assert.match(css,/grid-template-areas:"board create" "review review"/);
   assert.match(css,/max-width:850px/);
   assert.ok(build.includes("'src/editor/layout-v3.css'"));
