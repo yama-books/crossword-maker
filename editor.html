@@ -126,14 +126,32 @@ button{cursor:pointer;touch-action:manipulation}
 @media print{.topline,.heading,.tools-panel,.result-panel,.edit-tray,.board-foot,.footer,.block-btn{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}.layout{display:block}.panel{border:none;box-shadow:none}.board{width:130mm}.cell{font-size:16pt}.cell.black{background:#333!important;print-color-adjust:exact}}
 </style>
 <link rel="stylesheet" href="./src/editor/layout-v3.css">
+<link rel="stylesheet" href="./src/editor/ux-v4.css">
 </head>
-<body>
+<body data-view="welcome">
 <div class="wrap">
   <div class="topline"><span>CROSSWORD STUDIO</span><span>MAKE · PLAY · LEARN</span></div>
   <header class="heading">
     <div><h1>クロスワード工房</h1><p class="lead">作って、交差させて、仕上げる。</p></div>
     <a class="link-btn" href="./index.html">とく画面 ↗</a>
   </header>
+  <section id="welcome-screen" class="welcome-screen" aria-labelledby="welcome-title">
+    <p class="section-kicker">CROSSWORD STUDIO</p>
+    <h2 id="welcome-title">どんなふうに作りますか？</h2>
+    <div class="welcome-actions">
+      <button id="start-words" class="block-btn choice-card" type="button">
+        <span class="choice-symbol" aria-hidden="true">✦</span><span><strong>ことばから作る</strong><small>入れたいことばを決めて、あとはおまかせ</small></span><span class="choice-arrow" aria-hidden="true">›</span>
+      </button>
+      <button id="start-manual" class="block-btn choice-card" type="button">
+        <span class="choice-symbol" aria-hidden="true">✎</span><span><strong>自分で作る</strong><small>マスを編集して、途中から自動で仕上げる</small></span><span class="choice-arrow" aria-hidden="true">›</span>
+      </button>
+    </div>
+    <button id="start-resume" class="text-button" type="button" hidden>前回の続きから ›</button>
+  </section>
+  <div id="view-navigation" class="view-navigation" hidden>
+    <button id="back-to-home" type="button" class="text-button">‹ 作り方を選ぶ</button>
+    <span id="current-view-label" class="mini"></span>
+  </div>
   <main class="layout">
     <section class="panel board-panel" aria-label="盤面編集">
       <div class="board-header">
@@ -155,6 +173,7 @@ button{cursor:pointer;touch-action:manipulation}
           <button class="block-btn" id="erase" type="button">消す</button>
         </div>
       </div>
+      <button class="block-btn primary board-fill-action" id="editor-fill-action" type="button">✦ 空いているマスを自動で埋める</button><button class="block-btn board-fill-action" id="editor-cancel" type="button" hidden>探索を中止</button>
       <p id="message" class="help" role="status" aria-live="polite"></p>
       <details class="motion-toggle">
         <summary>登場アニメーション</summary>
@@ -168,34 +187,32 @@ button{cursor:pointer;touch-action:manipulation}
       </details>
     </section>
     <aside class="panel tools-panel" aria-label="制作設定">
-      <div class="panel-title">
-        <div><p class="section-kicker">02 / GENERATE</p><h2>自動で仕上げる</h2></div>
-      </div>
-      <p class="autofill-intro">必須語から最初に作るか、今の盤面の空いているマスだけを埋められます。</p>
+      <div class="panel-title"><div><p class="section-kicker">02 / CREATE</p><h2 id="generation-title">入れたいことばは？</h2></div></div>
+      <p class="autofill-intro" id="generation-intro">使いたいことばを1行に1つずつ入力してください。ほかのことばは辞書から選びます。</p>
       <div class="primary-controls">
-        <label class="field" for="auto-required">新しい問題に入れたいことば
-          <textarea id="auto-required" class="input" rows="2" placeholder="例：としょかん&#10;例：ねこ" spellcheck="false" autocomplete="off">としょかん
-がっこう</textarea>
+        <label class="field" for="auto-required">入れたいことば
+          <textarea id="auto-required" class="input" rows="4" placeholder="例：いも&#10;くらげ&#10;ねんど" spellcheck="false" autocomplete="off"></textarea>
         </label>
-        <label class="field" for="auto-difficulty">難易度
+        <label class="field advanced-difficulty" for="auto-difficulty">難易度
           <select id="auto-difficulty" class="input">
             <option value="1">やさしい</option>
-            <option value="2">ふつう</option>
-            <option value="3" selected>むずかしい</option>
+            <option value="2" selected>ふつう</option>
+            <option value="3">むずかしい</option>
           </select>
         </label>
         <div class="button-grid">
-          <button class="block-btn primary" type="button" id="auto-start">✦ 最初から作る</button>
+          <button class="block-btn primary" type="button" id="auto-start">✦ クロスワードを作る</button>
           <button class="block-btn" type="button" id="auto-fill">□ 残りを埋める</button>
         </div>
-        <p class="status-inline">「残りを埋める」は今の盤面と入力済みの文字を固定。上の必須語は新規生成だけに使います。</p>
+        <p class="status-inline" id="generation-note">まず5×5で探します。見つからなければ、ことばを調整してもう一度試せます。</p>
         <button class="block-btn" type="button" id="auto-cancel" hidden>探索を中止</button>
       </div>
       <div id="auto-status" class="word-result" role="status" aria-live="polite" hidden></div>
+      <button id="auto-simplify" type="button" class="block-btn" hidden>ことばを1つ減らして試す</button>
       <div id="auto-preview" hidden>
-        <p class="help"><strong>完成候補</strong> · まだ現在の盤面は変わっていません。</p>
+        <p class="help"><strong>できました！</strong> 盤面を見てから採用できます。</p>
         <div id="auto-preview-grid" class="auto-preview-grid" aria-label="生成された盤面のプレビュー"></div>
-        <div class="button-grid" style="margin-top:10px"><button class="block-btn primary" id="auto-apply" type="button" disabled>✓ この候補を採用</button><button class="block-btn" id="auto-retry" type="button">↻ 別の候補</button></div>
+        <div class="button-grid" style="margin-top:10px"><button class="block-btn primary" id="auto-apply" type="button" disabled>✓ 採用して編集する</button><button class="block-btn" id="auto-retry" type="button">↻ ほかの案を見る</button></div>
       </div>
       <details class="collapse-panel">
         <summary>新しい盤面・例題から始める</summary>
