@@ -22,7 +22,7 @@ const SAMPLE_WORDS=[
 let draft=createDraft(7,7), undoStack=[], redoStack=[], tool='letter', selected={r:0,c:0};
 let composing=false, lastMotion=null, motionTimer=null;
 let pendingAuto=null, runningAutoWorker=null;
-let autoSeed=20261019, lastAutoMode='new';
+let autoSeed=20261019, lastAutoMode='new', lastAutoSignature='';
 
 function say(message,tone=''){
  const target=$('message');
@@ -445,10 +445,15 @@ function setAutoBusy(busy){
 }
 function runAutoFill(mode,{retry=false}={}){
   if(runningAutoWorker)return;
-  if(retry)autoSeed=(autoSeed+1)>>>0;
-  else autoSeed=20261019;
   lastAutoMode=mode;
   const required=mode==='new' ? $('auto-required').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean) : [];
+  const difficulty=Number($('auto-difficulty').value);
+  const signature=mode+'|'+difficulty+'|'+required.join(',')+'|'+(mode==='fill'?draft.grid.join('/'):'' );
+  // Repeating the same request really explores a new seed, including
+  // retries after a failure; changing the input resets to the baseline.
+  if(retry || signature===lastAutoSignature)autoSeed=(autoSeed+1)>>>0;
+  else autoSeed=20261019;
+  lastAutoSignature=signature;
   const status=$('auto-status');
   clearPendingAuto();
   $('auto-simplify').hidden=true;
@@ -508,7 +513,7 @@ function runAutoFill(mode,{retry=false}={}){
     status.textContent='自動生成でエラーが発生しました。操作中の盤面は変更していません。';
   };
   worker.postMessage({id:1,mode,grid:draft.grid.slice(),clues:{...draft.clues},
-    required,difficulty:Number($('auto-difficulty').value),title:draft.title,seed:autoSeed});
+    required,difficulty,title:draft.title,seed:autoSeed});
 }
 $('auto-start').addEventListener('click',()=>runAutoFill('new'));
 $('auto-fill').addEventListener('click',()=>runAutoFill('fill'));
