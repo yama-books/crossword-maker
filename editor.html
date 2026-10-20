@@ -125,6 +125,7 @@ button{cursor:pointer;touch-action:manipulation}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}.block-btn,.link-btn{transition:none}}
 @media print{.topline,.heading,.tools-panel,.result-panel,.edit-tray,.board-foot,.footer,.block-btn{display:none!important}body{background:#fff}.wrap{max-width:none;padding:0}.layout{display:block}.panel{border:none;box-shadow:none}.board{width:130mm}.cell{font-size:16pt}.cell.black{background:#333!important;print-color-adjust:exact}}
 </style>
+<style>.share-panel{background:#f1f8f3;border:1px solid #bfdbc6;padding:13px;border-radius:12px;margin-top:12px;display:grid;gap:7px}.share-panel strong{font-size:14px}.share-panel a{font-size:13px;font-weight:700}.share-panel .input{font-size:14px}.share-panel .button-grid .block-btn{min-height:46px}.share-panel [hidden]{display:none!important}</style>
 <link rel="stylesheet" href="./src/editor/layout-v3.css">
 <link rel="stylesheet" href="./src/editor/ux-v4.css">
 </head>
@@ -173,7 +174,20 @@ button{cursor:pointer;touch-action:manipulation}
           <button class="block-btn" id="erase" type="button">消す</button>
         </div>
       </div>
-      <button class="block-btn primary board-fill-action" id="editor-fill-action" type="button">✦ 空いているマスを自動で埋める</button><button class="block-btn board-fill-action" id="editor-cancel" type="button" hidden>探索を中止</button>
+      <button class="block-btn primary board-fill-action" id="editor-fill-action" type="button">✦ 空いているマスを自動で埋める</button>
+      <button class="block-btn board-fill-action" id="share-puzzle" type="button" disabled>🔗 完成した問題を共有する</button>
+      <div id="share-panel" class="share-panel" hidden>
+        <strong>共有するリンク</strong>
+        <p class="help">このリンクを受け取った人は、ログインなしで問題を解けます。</p>
+        <input class="input" id="share-url" type="text" readonly aria-label="共有URL">
+        <div class="button-grid" style="margin-top:9px">
+          <button class="block-btn primary" id="share-copy" type="button">リンクをコピー</button>
+          <button class="block-btn" id="share-native" type="button" hidden>送信する</button>
+        </div>
+        <a id="share-preview" href="./index.html" target="_blank" rel="noopener noreferrer">解く画面を確認 ↗</a>
+        <p class="help">URLには答えのデータも含まれます。リンクを知っている人は内容を取り出せます。個人情報は入力しないでください。</p>
+        <p id="share-feedback" class="help" role="status" aria-live="polite"></p>
+      </div><button class="block-btn board-fill-action" id="editor-cancel" type="button" hidden>探索を中止</button>
       <p id="message" class="help" role="status" aria-live="polite"></p>
       <details class="motion-toggle">
         <summary>登場アニメーション</summary>
