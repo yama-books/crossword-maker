@@ -11,10 +11,12 @@ const validation = validatePuzzle(puzzle);
 if (!validation.ok) throw new Error('Puzzle validation failed:\n'+JSON.stringify(validation.errors,null,2));
 const template = read('src/index.template.html');
 const kana = read('src/core/kana.mjs').replace(/^export /gm,'');
-const MARKERS = ['/*__PUZZLE_DATA__*/','/*__KANA_CORE__*/'];
+const core=read('src/core/puzzle.mjs').replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'');
+const share=read('src/share/codec.mjs').replace(/^import[^\n]*\n/gm,'').replace(/^export /gm,'');
+const MARKERS = ['/*__PUZZLE_DATA__*/','/*__KANA_CORE__*/','/*__PUZZLE_CORE__*/','/*__SHARE_CORE__*/'];
 if (MARKERS.some(marker => !template.includes(marker))) throw new Error('Missing a required template marker');
 const escaped = JSON.stringify(puzzle).replace(/</g,'\\u003c').replace(/>/g,'\\u003e');
-const html = template.replace(MARKERS[0],escaped).replace(MARKERS[1],kana);
+const html = template.replace(MARKERS[0],escaped).replace(MARKERS[1],kana).replace(MARKERS[2],core).replace(MARKERS[3],share);
 if (html.includes(MARKERS[0]) || html.includes(MARKERS[1])) throw new Error('Unexpanded build marker');
 if (process.argv.includes('--sync')) {
   writeFileSync(resolve(root,'index.html'),html);
@@ -27,7 +29,7 @@ if (process.argv.includes('--sync')) {
   writeFileSync(resolve(root,'dist/index.html'),html);
   for (const path of ['editor.html','puzzle.json',
       'src/editor/app.mjs','src/editor/model.mjs','src/editor/motion.mjs','src/editor/layout-v3.css','src/editor/ux-v4.css','src/generator/words.mjs',
-      'src/core/kana.mjs','src/core/puzzle.mjs',
+      'src/core/kana.mjs','src/core/puzzle.mjs','src/share/codec.mjs',
       'src/generator/lexicon.mjs','src/generator/auto-fill.mjs','src/generator/auto-worker.mjs']) {
     const target=resolve(root,'dist',path);
     mkdirSync(resolve(target,'..'),{recursive:true});

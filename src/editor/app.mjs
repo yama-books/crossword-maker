@@ -1,4 +1,5 @@
 import {normalizeKana} from '../core/kana.mjs';
+import {makeShareUrl} from '../share/codec.mjs';
 import {MOTIONS,availableMotions,chooseMotion,delayForCell} from './motion.mjs';
 import {parseWordList,generateWordLayout} from '../generator/words.mjs';
 import {createDraft,fromPuzzle,normalizeDraft,putCell,putClue,toPuzzle,inspectDraft,EMPTY} from './model.mjs';
@@ -229,6 +230,8 @@ function render(){
  $('no-adjacent').checked=draft.rules.forbidAdjacentBlacks;
  $('undo').disabled=undoStack.length===0;$('redo').disabled=redoStack.length===0;
  $('export-puzzle').disabled=!review.ok;
+ $('share-puzzle').disabled=!review.ok;
+ $('share-panel').hidden=true;
  const report=$('word-result'),unplaced=$('unplaced-words');
  unplaced.replaceChildren();
  const generation=draft.generation;
@@ -403,6 +406,44 @@ function downloadJSON(data,suffix){
  anchor.href=url;anchor.download=safe+suffix+'.json';document.body.append(anchor);anchor.click();anchor.remove();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+
+$('share-puzzle').addEventListener('click',()=>{
+  const review=inspectDraft(draft);
+  if(!review.ok){say('完成した問題だけ共有できます。盤面チェックを確認してください。','error');return;}
+  try{
+    const url=makeShareUrl(toPuzzle(draft),location.href);
+    $('share-url').value=url;
+    $('share-preview').href=url;
+    $('share-panel').hidden=false;
+    $('share-feedback').textContent='';
+    $('share-native').hidden=typeof navigator.share!=='function';
+    $('share-panel').scrollIntoView({block:'nearest',behavior:'smooth'});
+  }catch(error){say(String(error?.message??'共有リンクを作れませんでした。'),'error');}
+});
+$('share-copy').addEventListener('click',async()=>{
+  const value=$('share-url').value;
+  if(!value)return;
+  try{
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);
+    else {
+      $('share-url').focus();
+      $('share-url').select();
+      if(!document.execCommand('copy'))throw new Error('copy rejected');
+    }
+    $('share-feedback').textContent='リンクをコピーしました。LINEやメールで送れます。';
+  }catch{
+    $('share-url').focus();
+    $('share-url').select();
+    $('share-feedback').textContent='自動コピーできませんでした。選択したURLを手動でコピーしてください。';
+  }
+});
+$('share-native').addEventListener('click',async()=>{
+  const url=$('share-url').value;
+  if(!url||typeof navigator.share!=='function')return;
+  try{await navigator.share({title:draft.title,text:'クロスワードを解いてみてください！',url});}
+  catch(error){if(error?.name!=='AbortError')$('share-feedback').textContent='送信できませんでした。リンクのコピーをお試しください。';}
+});
+
 $('save').addEventListener('click',()=>{
  downloadJSON(draft,'-draft');say('作業JSONを書き出しました。','success');
 });
