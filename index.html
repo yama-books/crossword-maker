@@ -48,6 +48,7 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
 .clue-num{display:inline-block;width:22px;min-width:22px;font-weight:850;color:var(--accent);font-size:13px}
 .clue-text{flex:1}
 .clue-len{font-size:12px;color:var(--muted);white-space:nowrap}
+.share-warning{font-size:13px;padding:14px;background:#fff0db;border:1px solid #e6bea0;border-radius:10px;color:#85522c;margin:8px 0 20px}
 .footer{margin-top:18px;font-size:12px;color:var(--muted);text-align:center}
 @media(max-width:740px){.wrap{padding:19px 13px 42px}.layout{grid-template-columns:1fr;gap:15px}.board-panel,.clue-panel{padding:16px}.board{max-width:480px;margin:0 auto}.clues{grid-template-columns:1fr}.sq input{font-size:clamp(21px,6vw,34px)}.num{font-size:11px}.topline{font-size:10px}}
 @media print{
@@ -69,16 +70,17 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
 <body>
 <div class="wrap">
  <header>
-  <div class="topline"><span>JAPANESE CROSSWORD / PROTOTYPE 01</span><span class="pill">6 × 6 ・ 全14問</span></div>
+  <div class="topline"><span>クロスワード工房 · とく</span><span class="pill" id="puzzle-size">6 × 6 ・ 全14問</span></div>
   <h1>学校生活と身近なことば</h1>
   <p class="lead">タテ・ヨコのカギを解いて、すべての白マスを埋めましょう。小さい「ッ・ャ・ュ・ョ」は大きい文字で入れます。</p>
   <a class="edit-link" href="./editor.html">✦ クロスワードをつくる →</a>
+  <p id="shared-warning" class="share-warning" role="alert" hidden></p>
  </header>
  <main class="layout">
   <section class="panel board-panel" aria-label="クロスワードの盤面">
    <div class="progress-label"><span>進み具合</span><span id="progress-text">0 / 26 マス</span></div>
    <div class="progressbar" aria-hidden="true"><span id="progress-fill"></span></div>
-   <div class="board" id="board" role="group" aria-label="6行6列のクロスワード"></div>
+   <div class="board" id="board" role="group" aria-label="クロスワード"></div>
    <div class="selected-clue" id="selected-clue" aria-live="polite"></div>
    <div class="actions">
      <button class="primary" id="check">答え合わせ</button>
@@ -96,18 +98,302 @@ h2{font-size:18px;margin:0 0 10px;line-height:1.2}
 </div>
 <script>
 'use strict';
-const puzzle={"title":"学校生活と身近なことば","size":6,"grid":["■カイガ■テ","バツ■クラス","■オカネ■ト","コ■テンキ■","トケイ■リカ","バ■カバン■"],"numbers":{"0,1":1,"0,3":2,"0,5":3,"1,0":4,"1,3":5,"2,1":6,"2,2":7,"3,0":8,"3,2":9,"3,4":10,"4,0":11,"4,4":12,"5,2":13},"entries":[{"direction":"A","start":[0,1],"number":1,"answer":"カイガ","cells":[[0,1],[0,2],[0,3]],"clue":"絵の具などを使って描いた、絵の作品。"},{"direction":"A","start":[1,0],"number":4,"answer":"バツ","cells":[[1,0],[1,1]],"clue":"テストで、まちがった答えにつく印。「○」の反対。"},{"direction":"A","start":[1,3],"number":5,"answer":"クラス","cells":[[1,3],[1,4],[1,5]],"clue":"学校で、いっしょに勉強する生徒のまとまり。"},{"direction":"A","start":[2,1],"number":6,"answer":"オカネ","cells":[[2,1],[2,2],[2,3]],"clue":"ものを買うときに支払う、硬貨や紙幣など。"},{"direction":"A","start":[3,2],"number":9,"answer":"テンキ","cells":[[3,2],[3,3],[3,4]],"clue":"晴れ・雨・くもりなど、空のようす。"},{"direction":"A","start":[4,0],"number":11,"answer":"トケイ","cells":[[4,0],[4,1],[4,2]],"clue":"時刻を知るための道具。"},{"direction":"A","start":[4,4],"number":12,"answer":"リカ","cells":[[4,4],[4,5]],"clue":"自然のしくみを学ぶ、学校の教科。"},{"direction":"A","start":[5,2],"number":13,"answer":"カバン","cells":[[5,2],[5,3],[5,4]],"clue":"教科書や筆箱などを入れて、持ち運ぶもの。"},{"direction":"D","start":[3,0],"number":8,"answer":"コトバ","cells":[[3,0],[4,0],[5,0]],"clue":"自分の考えや気持ちを伝えるために使うもの。"},{"direction":"D","start":[0,1],"number":1,"answer":"カツオ","cells":[[0,1],[1,1],[2,1]],"clue":"「たたき」も有名な、海を泳ぐ魚。"},{"direction":"D","start":[2,2],"number":7,"answer":"カテイカ","cells":[[2,2],[3,2],[4,2],[5,2]],"clue":"料理や裁縫、暮らしについて学ぶ教科。"},{"direction":"D","start":[0,3],"number":2,"answer":"ガクネン","cells":[[0,3],[1,3],[2,3],[3,3]],"clue":"学校で「1年生」「2年生」などを分ける区分。"},{"direction":"D","start":[3,4],"number":10,"answer":"キリン","cells":[[3,4],[4,4],[5,4]],"clue":"首がとても長い、アフリカなどにすむ動物。"},{"direction":"D","start":[0,5],"number":3,"answer":"テスト","cells":[[0,5],[1,5],[2,5]],"clue":"勉強したことを理解したか確かめる試験。"}]};
+/** Japanese crossword answer normalization. No dependencies; also embedded in the offline player. */
+const SMALL_KANA = Object.freeze({
+  'ァ':'ア','ィ':'イ','ゥ':'ウ','ェ':'エ','ォ':'オ',
+  'ッ':'ツ','ャ':'ヤ','ュ':'ユ','ョ':'ヨ','ヮ':'ワ',
+  'ヵ':'カ','ヶ':'ケ'
+});
+const KANA_CHARACTER = /^[ァ-ヴー]$/u;
+
+function normalizeKana(value, { strict = false } = {}) {
+  if (typeof value !== 'string') throw new TypeError('Kana value must be a string');
+  const folded = value.normalize('NFKC').replace(/[ぁ-ゖ]/gu,
+    character => String.fromCodePoint(character.codePointAt(0) + 0x60));
+  const expanded = [...folded].map(character => SMALL_KANA[character] ?? character);
+  if (strict && (expanded.length === 0 || expanded.some(character => !KANA_CHARACTER.test(character)))) {
+    throw new Error('Invalid kana characters');
+  }
+  return expanded.filter(character => KANA_CHARACTER.test(character)).join('');
+}
+
+
+const DEFAULT_RULES = Object.freeze({
+  forbidAdjacentBlacks: true,
+  requireConnectedWhite: true,
+  rotationalSymmetry: true,
+  forbidLeadingNOrBar: true,
+  forbidDuplicateAnswers: true
+});
+
+const keyOf = (r, c) => r+','+c;
+const error = (code, detail = '') => ({ code, detail });
+
+/** Extract all two-or-more-letter word slots and row-major clue numbering. */
+function extractSlots(grid) {
+  if (!Array.isArray(grid) || grid.length < 2 || grid.length > 40) {
+    throw new Error('Expected 2–40 rows');
+  }
+  const rows = grid.map(row => typeof row === 'string' ? [...row] : row);
+  const width = rows[0]?.length;
+  if (!Number.isInteger(width) || width < 2 || width > 40 ||
+      rows.some(row => !Array.isArray(row) || row.length !== width || row.some(x => typeof x !== 'string' || [...x].length !== 1))) {
+    throw new Error('Grid must be rectangular with one character per cell');
+  }
+  const slots = [];
+  const byStart = new Map();
+  const covered = new Set();
+  for (let r = 0; r < rows.length; r++) for (let c = 0; c < width; c++) {
+    if (rows[r][c] === '■') continue;
+    for (const direction of ['A', 'D']) {
+      const dr = direction === 'D' ? 1 : 0;
+      const dc = direction === 'A' ? 1 : 0;
+      if (r - dr >= 0 && c - dc >= 0 && rows[r-dr][c-dc] !== '■') continue;
+      const cells = [];
+      for (let y = r, x = c; y < rows.length && x < width && rows[y][x] !== '■'; y += dr, x += dc) {
+        cells.push([y,x]);
+      }
+      if (cells.length < 2) continue;
+      const slot = { direction, start: [r,c], cells, answer: cells.map(([y,x]) => rows[y][x]).join('') };
+      slots.push(slot);
+      for (const [y,x] of cells) covered.add(keyOf(y,x));
+      const id = keyOf(r,c);
+      if (!byStart.has(id)) byStart.set(id, []);
+      byStart.get(id).push(slot);
+    }
+  }
+  const numbers = {};
+  let number = 0;
+  for (let r = 0; r < rows.length; r++) for (let c = 0; c < width; c++) {
+    const id = keyOf(r,c);
+    if (!byStart.has(id)) continue;
+    numbers[id] = ++number;
+    for (const slot of byStart.get(id)) slot.number = number;
+  }
+  return { rows, width, height: rows.length, slots, numbers, covered };
+}
+
+/** Structural validation only: dictionary meaning and clue quality require human review. */
+function validatePuzzle(puzzle, overrides = {}) {
+  const errors = [];
+  if (!puzzle || typeof puzzle !== 'object') return {ok:false,errors:[error('invalid_puzzle')]};
+  let analysis;
+  try { analysis = extractSlots(puzzle.grid); }
+  catch (e) { return {ok:false,errors:[error('invalid_grid', e.message)]}; }
+  const { rows, width, height, slots, numbers, covered } = analysis;
+  const rules = { ...DEFAULT_RULES, ...(puzzle.ruleSet ?? {}), ...overrides };
+  if (puzzle.size !== undefined && (height !== puzzle.size || width !== puzzle.size)) errors.push(error('size_mismatch'));
+  if (puzzle.rows !== undefined && height !== puzzle.rows) errors.push(error('size_mismatch', 'rows'));
+  if (puzzle.cols !== undefined && width !== puzzle.cols) errors.push(error('size_mismatch', 'cols'));
+  const whiteCells = [];
+  for (let r = 0; r < height; r++) for (let c = 0; c < width; c++) {
+    const character = rows[r][c];
+    if (character === '■') {
+      if (rules.forbidAdjacentBlacks && ((r > 0 && rows[r-1][c] === '■') || (c > 0 && rows[r][c-1] === '■'))) {
+        errors.push(error('black_adjacent', keyOf(r,c)));
+      }
+      if (rules.rotationalSymmetry && rows[height-r-1][width-c-1] !== '■') errors.push(error('asymmetry', keyOf(r,c)));
+    } else {
+      whiteCells.push(keyOf(r,c));
+      try { if (normalizeKana(character, {strict:true}) !== character) errors.push(error('invalid_kana', keyOf(r,c))); }
+      catch { errors.push(error('invalid_kana', keyOf(r,c))); }
+      if (!covered.has(keyOf(r,c))) errors.push(error('orphan_white', keyOf(r,c)));
+    }
+  }
+  if (!whiteCells.length) errors.push(error('empty_board'));
+  else if (rules.requireConnectedWhite) {
+    const visited = new Set([whiteCells[0]]);
+    const queue = [whiteCells[0]];
+    for (let i = 0; i < queue.length; i++) {
+      const [r,c] = queue[i].split(',').map(Number);
+      for (const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const y=r+dr,x=c+dc,k=keyOf(y,x);
+        if (y>=0&&x>=0&&y<height&&x<width&&rows[y][x]!=='■'&&!visited.has(k)) { visited.add(k);queue.push(k); }
+      }
+    }
+    if (visited.size !== whiteCells.length) errors.push(error('disconnected'));
+  }
+  const seenAnswers = new Set();
+  for (const slot of slots) {
+    if (rules.forbidLeadingNOrBar && /^[ンー]/u.test(slot.answer)) errors.push(error('invalid_start', slot.direction+':'+slot.number));
+    if (rules.forbidDuplicateAnswers && seenAnswers.has(slot.answer)) errors.push(error('duplicate_answer', slot.answer));
+    seenAnswers.add(slot.answer);
+  }
+  const actualNumbers = puzzle.numbers ?? {};
+  if (JSON.stringify(Object.entries(numbers).sort()) !== JSON.stringify(Object.entries(actualNumbers).sort())) errors.push(error('number_mismatch'));
+  const expected = new Map(slots.map(slot => [slot.direction+':'+keyOf(...slot.start), slot]));
+  const claimed = new Set();
+  if (!Array.isArray(puzzle.entries)) errors.push(error('missing_entries'));
+  else for (const entry of puzzle.entries) {
+    const id = entry.direction+':'+(Array.isArray(entry.start) ? keyOf(...entry.start) : '?');
+    if (claimed.has(id)) errors.push(error('duplicate_entry', id));
+    claimed.add(id);
+    const slot = expected.get(id);
+    if (!slot) {errors.push(error('extra_entry', id));continue;}
+    if (entry.number !== slot.number || entry.answer !== slot.answer ||
+        JSON.stringify(entry.cells) !== JSON.stringify(slot.cells)) errors.push(error('entry_mismatch', id));
+    if (typeof entry.clue !== 'string' || !entry.clue.trim()) errors.push(error('missing_clue', id));
+  }
+  if (Array.isArray(puzzle.entries)) for (const id of expected.keys()) if (!claimed.has(id)) errors.push(error('missing_entry', id));
+  if (Array.isArray(puzzle.requiredWords)) for (const word of puzzle.requiredWords) {
+    try {
+      if (!seenAnswers.has(normalizeKana(word, {strict:true}))) errors.push(error('missing_required_word', word));
+    } catch { errors.push(error('invalid_required_word', String(word))); }
+  }
+  return {ok:errors.length === 0,errors,analysis};
+}
+
+
+const CODEC_VERSION=1;
+const URL_LIMIT=6500;
+const MAX_JSON_BYTES=70000;
+const MAX_INPUT_CHARS=30000;
+const RULE_KEYS=Object.keys(DEFAULT_RULES);
+const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8',{fatal:true});
+
+function assertComplete(puzzle){
+  const checked=validatePuzzle(puzzle);
+  if(!checked.ok)throw new Error('完成していない問題は共有できません。盤面とカギを確認してください。');
+  const {height,width,slots}=checked.analysis;
+  if(height<5||width<5||height>15||width>15)throw new Error('共有できる盤面は5〜15マスです。');
+  if(slots.length>100)throw new Error('カギが多すぎます。');
+  return checked.analysis;
+}
+function packBytes(input){
+  const dict=new Map();
+  for(let i=0;i<256;i++)dict.set(String.fromCharCode(i),i);
+  let next=256,w='',codes=[];
+  for(const byte of input){
+    const k=String.fromCharCode(byte),candidate=w+k;
+    if(dict.has(candidate)){w=candidate;continue;}
+    if(w)codes.push(dict.get(w));
+    if(next<4096)dict.set(candidate,next++);
+    w=k;
+  }
+  if(w)codes.push(dict.get(w));
+  const out=[];let buffer=0,bits=0;
+  for(const code of codes){
+    buffer=(buffer<<12)|code;bits+=12;
+    while(bits>=8){bits-=8;out.push((buffer>>>bits)&255);buffer&=(1<<bits)-1;}
+  }
+  if(bits>0)out.push(buffer<<(8-bits));
+  return Uint8Array.from(out);
+}
+function unpackBytes(input){
+  let buffer=0,bits=0,codes=[];
+  for(const byte of input){
+    buffer=(buffer<<8)|byte;bits+=8;
+    if(bits>=12){bits-=12;codes.push((buffer>>>bits)&4095);buffer&=(1<<bits)-1;}
+  }
+  if(!codes.length)throw new Error('共有データが空です。');
+  let dict=Array.from({length:256},(_,i)=>String.fromCharCode(i));
+  let previous=dict[codes[0]],next=256;
+  if(previous===undefined)throw new Error('共有データが壊れています。');
+  const chunks=[previous];let outputBytes=previous.length;
+  for(let i=1;i<codes.length;i++){
+    const code=codes[i];
+    const entry=dict[code]??(code===next?previous+previous[0]:null);
+    if(entry===null)throw new Error('共有データが壊れています。');
+    chunks.push(entry);outputBytes+=entry.length;
+    if(outputBytes>MAX_JSON_BYTES)throw new Error('共有データのサイズが大きすぎます。');
+    if(next<4096)dict[next++]=previous+entry[0];
+    previous=entry;
+  }
+  return Uint8Array.from(chunks.join(''),ch=>ch.charCodeAt(0));
+}
+function toUrl64(bytes){
+  let text='';
+  for(const byte of bytes)text+=String.fromCharCode(byte);
+  return btoa(text).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function fromUrl64(text){
+  if(!/^[A-Za-z0-9_-]+$/.test(text))throw new Error('共有リンクに使えない文字が含まれています。');
+  const s=atob(text.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-text.length%4)%4));
+  return Uint8Array.from(s,c=>c.charCodeAt(0));
+}
+function compact(puzzle){
+  const analysis=assertComplete(puzzle);
+  const byId=new Map(puzzle.entries.map(e=>[e.direction+':'+e.start.join(','),e.clue]));
+  const clues=analysis.slots.map(slot=>byId.get(slot.direction+':'+slot.start.join(',')));
+  if(clues.some(c=>typeof c!=='string'||!c.trim()||c.length>500))
+    throw new Error('カギは1件につき500文字以内で入力してください。');
+  const title=String(puzzle.title??'クロスワード').trim().slice(0,80);
+  const flags=RULE_KEYS.map(k=>(puzzle.ruleSet?.[k]??DEFAULT_RULES[k])?'1':'0').join('');
+  return {v:CODEC_VERSION,t:title,g:puzzle.grid,c:clues,r:flags};
+}
+function expand(raw){
+  if(!raw||raw.v!==CODEC_VERSION||typeof raw.t!=='string'||raw.t.length>80||
+    !Array.isArray(raw.g)||raw.g.length<5||raw.g.length>15||raw.g.some(s=>typeof s!=='string'||[...s].length>15)||
+    !Array.isArray(raw.c)||raw.c.length>100||raw.c.some(s=>typeof s!=='string'||s.length>500||!s.trim())||
+    typeof raw.r!=='string'||!/^[01]{5}$/.test(raw.r))
+    throw new Error('共有問題の形式が正しくありません。');
+  const analysis=extractSlots(raw.g);
+  if(analysis.width<5||analysis.width>15||analysis.height>15||analysis.slots.length!==raw.c.length)
+    throw new Error('共有問題の盤面やカギの数が正しくありません。');
+  const ruleSet={};
+  RULE_KEYS.forEach((name,i)=>{ruleSet[name]=raw.r[i]==='1';});
+  const puzzle={title:raw.t||'クロスワード',rows:analysis.height,cols:analysis.width,
+    grid:raw.g.slice(),numbers:analysis.numbers,ruleSet,
+    entries:analysis.slots.map((slot,i)=>({...slot,clue:raw.c[i]}))};
+  if(analysis.width===analysis.height)puzzle.size=analysis.width;
+  assertComplete(puzzle);
+  return puzzle;
+}
+/** Complete puzzles only. Same board + clues produce the same fragment. */
+function encodeSharedPuzzle(puzzle){
+  const serialized=JSON.stringify(compact(puzzle));
+  if(serialized.length>MAX_INPUT_CHARS)throw new Error('カギの文章が多すぎます。短くしてから共有してください。');
+  const packed=packBytes(encoder.encode(serialized));
+  const encoded='p='+CODEC_VERSION+'.'+toUrl64(packed);
+  if(encoded.length>URL_LIMIT)throw new Error('共有URLが長すぎます。カギを短くするか、問題JSONを保存してください。');
+  return '#'+encoded;
+}
+function decodeSharedPuzzle(fragment){
+  const match=/^#p=1\.([A-Za-z0-9_-]+)$/.exec(fragment);
+  if(!match)throw new Error('この共有リンクの形式には対応していません。');
+  if(fragment.length>URL_LIMIT+1)throw new Error('共有URLが長すぎます。');
+  const bytes=unpackBytes(fromUrl64(match[1]));
+  const raw=JSON.parse(decoder.decode(bytes));
+  return expand(raw);
+}
+function sharedProgressKey(fragment){
+  let hash=2166136261;
+  for(let i=0;i<fragment.length;i++){hash^=fragment.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return 'jp-crossword-proto-v1:shared-'+(hash>>>0).toString(36);
+}
+function makeShareUrl(puzzle,baseUrl){
+  const url=new URL('index.html',baseUrl);
+  url.hash=encodeSharedPuzzle(puzzle);
+  if(url.href.length>URL_LIMIT+200)throw new Error('共有リンクが長すぎます。問題のカギを短くしてください。');
+  return url.href;
+}
+
+const originalPuzzle={"title":"学校生活と身近なことば","size":6,"grid":["■カイガ■テ","バツ■クラス","■オカネ■ト","コ■テンキ■","トケイ■リカ","バ■カバン■"],"numbers":{"0,1":1,"0,3":2,"0,5":3,"1,0":4,"1,3":5,"2,1":6,"2,2":7,"3,0":8,"3,2":9,"3,4":10,"4,0":11,"4,4":12,"5,2":13},"entries":[{"direction":"A","start":[0,1],"number":1,"answer":"カイガ","cells":[[0,1],[0,2],[0,3]],"clue":"絵の具などを使って描いた、絵の作品。"},{"direction":"A","start":[1,0],"number":4,"answer":"バツ","cells":[[1,0],[1,1]],"clue":"テストで、まちがった答えにつく印。「○」の反対。"},{"direction":"A","start":[1,3],"number":5,"answer":"クラス","cells":[[1,3],[1,4],[1,5]],"clue":"学校で、いっしょに勉強する生徒のまとまり。"},{"direction":"A","start":[2,1],"number":6,"answer":"オカネ","cells":[[2,1],[2,2],[2,3]],"clue":"ものを買うときに支払う、硬貨や紙幣など。"},{"direction":"A","start":[3,2],"number":9,"answer":"テンキ","cells":[[3,2],[3,3],[3,4]],"clue":"晴れ・雨・くもりなど、空のようす。"},{"direction":"A","start":[4,0],"number":11,"answer":"トケイ","cells":[[4,0],[4,1],[4,2]],"clue":"時刻を知るための道具。"},{"direction":"A","start":[4,4],"number":12,"answer":"リカ","cells":[[4,4],[4,5]],"clue":"自然のしくみを学ぶ、学校の教科。"},{"direction":"A","start":[5,2],"number":13,"answer":"カバン","cells":[[5,2],[5,3],[5,4]],"clue":"教科書や筆箱などを入れて、持ち運ぶもの。"},{"direction":"D","start":[3,0],"number":8,"answer":"コトバ","cells":[[3,0],[4,0],[5,0]],"clue":"自分の考えや気持ちを伝えるために使うもの。"},{"direction":"D","start":[0,1],"number":1,"answer":"カツオ","cells":[[0,1],[1,1],[2,1]],"clue":"「たたき」も有名な、海を泳ぐ魚。"},{"direction":"D","start":[2,2],"number":7,"answer":"カテイカ","cells":[[2,2],[3,2],[4,2],[5,2]],"clue":"料理や裁縫、暮らしについて学ぶ教科。"},{"direction":"D","start":[0,3],"number":2,"answer":"ガクネン","cells":[[0,3],[1,3],[2,3],[3,3]],"clue":"学校で「1年生」「2年生」などを分ける区分。"},{"direction":"D","start":[3,4],"number":10,"answer":"キリン","cells":[[3,4],[4,4],[5,4]],"clue":"首がとても長い、アフリカなどにすむ動物。"},{"direction":"D","start":[0,5],"number":3,"answer":"テスト","cells":[[0,5],[1,5],[2,5]],"clue":"勉強したことを理解したか確かめる試験。"}]};
+const hasShare=location.hash.startsWith('#p=');
+let shareError='';
+let puzzle=originalPuzzle;
+if(hasShare){
+ try{puzzle=decodeSharedPuzzle(location.hash);}
+ catch(error){shareError='共有された問題を開けませんでした。'+String(error?.message||'リンクをご確認ください。');}
+}
+const progressKey=hasShare&&!shareError?sharedProgressKey(location.hash):'jp-crossword-proto-v1';
 const entries=puzzle.entries;
-const M=puzzle.size;
+if(!shareError){document.querySelector('h1').textContent=puzzle.title||'クロスワード';}
+document.getElementById('puzzle-size').textContent=(puzzle.cols??puzzle.size??puzzle.grid[0].length)+' × '+(puzzle.rows??puzzle.size??puzzle.grid.length)+' ・ 全'+entries.length+'問';
+if(shareError){const warning=document.getElementById('shared-warning');warning.hidden=false;warning.textContent=shareError+' 以下には元の例題を表示しています。';}
+const ROWS=puzzle.rows??puzzle.grid.length;
+const COLS=puzzle.cols??puzzle.size??[...puzzle.grid[0]].length;
 const cells={};
 const byCoord=(r,c)=>`${r},${c}`;
 const wordsFor=(r,c)=>entries.filter(e=>e.cells.some(x=>x[0]===r&&x[1]===c));
 let selected=entries.find(e=>e.direction==='A');
 let selectedAt=byCoord(...selected.start);
 let values={};let helped=new Set();let incorrect=new Set();let showingAnswers=false;let composing=false;
-try{values=JSON.parse(localStorage.getItem('jp-crossword-proto-v1'))||{}}catch(_){values={}}
+try{values=JSON.parse(localStorage.getItem(progressKey))||{}}catch(_){values={}}
 const grid=document.getElementById('board');
-for(let r=0;r<M;r++)for(let c=0;c<M;c++){
+grid.style.gridTemplateColumns='repeat('+COLS+',minmax(0,1fr))';
+grid.setAttribute('aria-label',ROWS+'行'+COLS+'列のクロスワード');
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
  const k=byCoord(r,c),ch=puzzle.grid[r][c];
  const box=document.createElement('div');box.className='sq'+(ch==='■'?' black':'');box.dataset.coord=k;
  if(ch!=='■'){
@@ -137,25 +423,6 @@ for(const [dir,heading] of groups){
  }
  section.append(list);document.getElementById('clue-lists').append(section);
 }
-/** Japanese crossword answer normalization. No dependencies; also embedded in the offline player. */
-const SMALL_KANA = Object.freeze({
-  'ァ':'ア','ィ':'イ','ゥ':'ウ','ェ':'エ','ォ':'オ',
-  'ッ':'ツ','ャ':'ヤ','ュ':'ユ','ョ':'ヨ','ヮ':'ワ',
-  'ヵ':'カ','ヶ':'ケ'
-});
-const KANA_CHARACTER = /^[ァ-ヴー]$/u;
-
-function normalizeKana(value, { strict = false } = {}) {
-  if (typeof value !== 'string') throw new TypeError('Kana value must be a string');
-  const folded = value.normalize('NFKC').replace(/[ぁ-ゖ]/gu,
-    character => String.fromCodePoint(character.codePointAt(0) + 0x60));
-  const expanded = [...folded].map(character => SMALL_KANA[character] ?? character);
-  if (strict && (expanded.length === 0 || expanded.some(character => !KANA_CHARACTER.test(character)))) {
-    throw new Error('Invalid kana characters');
-  }
-  return expanded.filter(character => KANA_CHARACTER.test(character)).join('');
-}
-
 const katakana=(text)=>normalizeKana(text);
 function chooseCell(r,c,click){
  const k=byCoord(r,c);const opts=wordsFor(r,c);if(!opts.length)return;
@@ -178,7 +445,7 @@ function paint(){
  document.getElementById('progress-fill').style.width=`${used/Object.keys(cells).length*100}%`;
  document.getElementById('reveal').textContent=showingAnswers?'解答を隠す':'解答を表示';
 }
-function save(){try{localStorage.setItem('jp-crossword-proto-v1',JSON.stringify(values))}catch(_){}}
+function save(){try{localStorage.setItem(progressKey,JSON.stringify(values))}catch(_){}}
 function moveInEntry(k,offset){
  const index=selected.cells.findIndex(x=>byCoord(...x)===k);
  if(index<0)return;
