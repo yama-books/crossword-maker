@@ -45,11 +45,71 @@ for(const mode of MOTIONS){
  option.value=mode.id;option.textContent=mode.label;
  $('motion-select').append(option);
 }
-function remember(){try{localStorage.setItem(STORAGE,JSON.stringify(draft));}catch(_){}}
+function remember(){try{localStorage.setItem(STORAGE,JSON.stringify(draft));$('start-resume').hidden=false;}catch(_){}}
 try{
  const saved=localStorage.getItem(STORAGE);
  if(saved)draft=normalizeDraft(JSON.parse(saved));
 }catch(e){say('保存されたデータを読めなかったため、新規盤面で開始しました。');}
+
+/**
+ * Guided UX v4. Keep draft persistence and existing editor model unchanged.
+ * The start screen does not alter stored work.
+ */
+function showView(view,{resetMessage=true}={}){
+ if(!['welcome','words','editor'].includes(view))throw new Error('Unknown view');
+ if(runningAutoWorker){
+   runningAutoWorker.terminate();
+   runningAutoWorker=null;
+   setAutoBusy(false);
+ }
+ document.body.dataset.view=view;
+ $('view-navigation').hidden=view==='welcome';
+ $('current-view-label').textContent=view==='words'?'ことばから作る':view==='editor'?'盤面を編集':'';
+ try{$('start-resume').hidden=!localStorage.getItem(STORAGE);}catch{$('start-resume').hidden=true;}
+ if(resetMessage){
+   clearPendingAuto();
+   $('auto-status').hidden=true;
+   $('auto-simplify').hidden=true;
+ }
+ $('generation-title').textContent=view==='editor'?'自動補完と設定':'入れたいことばは？';
+ window.scrollTo(0,0);
+}
+$('start-words').addEventListener('click',()=>showView('words'));
+$('start-manual').addEventListener('click',()=>showView('editor'));
+$('start-resume').addEventListener('click',()=>showView('editor'));
+$('back-to-home').addEventListener('click',()=>showView('welcome'));
+$('editor-fill-action').addEventListener('click',()=>runAutoFill('fill'));
+// A short tap now has a visible pressed state from the first pointerdown;
+// leave the visual state for 120ms after pointerup so even quick taps are seen.
+const releaseTimers=new WeakMap();
+const pressSelector='.block-btn,.link-btn,.choice-card,.text-button,.cell';
+function pressTarget(event){return event.target?.closest?.(pressSelector);}
+function releasePress(button,immediate=false){
+ if(!button)return;
+ const existing=releaseTimers.get(button);
+ if(existing)clearTimeout(existing);
+ if(immediate){button.classList.remove('is-pressed');return;}
+ releaseTimers.set(button,setTimeout(()=>{button.classList.remove('is-pressed');releaseTimers.delete(button);},120));
+}
+document.addEventListener('pointerdown',event=>{
+ const button=pressTarget(event);
+ if(!button||button.disabled||event.button>0)return;
+ const existing=releaseTimers.get(button);
+ if(existing)clearTimeout(existing);
+ button.classList.add('is-pressed');
+},{capture:true});
+document.addEventListener('pointerup',event=>releasePress(pressTarget(event)),{capture:true});
+document.addEventListener('pointercancel',event=>releasePress(pressTarget(event),true),{capture:true});
+document.addEventListener('keydown',event=>{
+ if((event.key===' '||event.key==='Enter')&&!event.repeat){
+   const button=pressTarget(event);
+   if(button&&!button.disabled)button.classList.add('is-pressed');
+ }
+},{capture:true});
+document.addEventListener('keyup',event=>{
+ if(event.key===' '||event.key==='Enter')releasePress(pressTarget(event));
+},{capture:true});
+document.addEventListener('blur',event=>releasePress(pressTarget(event),true),{capture:true});
 
 function clearPendingAuto(){
  pendingAuto=null;
@@ -379,7 +439,9 @@ function previewAutoPuzzle(puzzle){
 function setAutoBusy(busy){
   $('auto-start').disabled=busy;
   $('auto-fill').disabled=busy;
+  $('editor-fill-action').disabled=busy;
   $('auto-cancel').hidden=!busy;
+  $('editor-cancel').hidden=!busy;
 }
 function runAutoFill(mode,{retry=false}={}){
   if(runningAutoWorker)return;
@@ -389,6 +451,7 @@ function runAutoFill(mode,{retry=false}={}){
   const required=mode==='new' ? $('auto-required').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean) : [];
   const status=$('auto-status');
   clearPendingAuto();
+  $('auto-simplify').hidden=true;
   status.hidden=false;
   status.classList.remove('warning');
   if(required.length>5){
@@ -426,11 +489,17 @@ function runAutoFill(mode,{retry=false}={}){
       pendingAuto=result.puzzle;
       previewAutoPuzzle(result.puzzle);
       const n=result.puzzle.entries.length;
-      status.textContent='完成候補が見つかりました。'+n+'問、探索'+(result.totalNodes??result.nodes)+'回。採用するまで今の編集内容は変わりません。';
+      status.textContent='完成候補ができました（'+n+'問）。採用すると盤面を自由に編集できます。';
     }else{
       status.classList.add('warning');
-      status.textContent='完成候補が見つかりませんでした。'+(result.reason??'')+
-        (mode==='fill'?' 現在の入力を保護しているため、文字や黒マスの調整が必要な場合があります。':' 必須語を減らすか、条件を変えて試してください。');
+      if(mode==='new'){
+        status.textContent='この組合せは、今回試した5×5の盤面では完成できませんでした。'+
+          '言葉を1つ減らすか「作る」を押して別の組合せを試してください。';
+        $('auto-simplify').hidden=required.length<=1;
+      }else{
+        status.textContent='今の文字と黒マスを守ると、残りを完成できませんでした。'+
+          '入力した文字・黒マスを見直して、もう一度「埋める」を試してください。';
+      }
     }
   };
   worker.onerror=event=>{
@@ -443,21 +512,31 @@ function runAutoFill(mode,{retry=false}={}){
 }
 $('auto-start').addEventListener('click',()=>runAutoFill('new'));
 $('auto-fill').addEventListener('click',()=>runAutoFill('fill'));
+$('auto-simplify').addEventListener('click',()=>{
+ const items=$('auto-required').value.split(/\r?\n/).filter(line=>line.trim());
+ if(items.length<2)return;
+ items.pop();
+ $('auto-required').value=items.join('\n');
+ runAutoFill('new',{retry:true});
+});
 $('auto-retry').addEventListener('click',()=>runAutoFill(lastAutoMode,{retry:true}));
-$('auto-cancel').addEventListener('click',()=>{
+function cancelAuto(){
   if(runningAutoWorker){runningAutoWorker.terminate();runningAutoWorker=null;}
   setAutoBusy(false);
   const status=$('auto-status');
-  status.hidden=false;status.textContent='探索を中止しました。現在の盤面は変更していません。';
-});
+  status.hidden=false;status.textContent='探索を中止しました。編集内容はそのままです。';
+}
+$('auto-cancel').addEventListener('click',cancelAuto);
+$('editor-cancel').addEventListener('click',cancelAuto);
 $('auto-apply').addEventListener('click',()=>{
   if(!pendingAuto)return;
   const chosen=pendingAuto;
   try {
     commit(fromPuzzle(chosen),{motion:true});
-    say('辞書で生成した完成問題を採用しました。Undoで戻せます。','success');
-    $('auto-status').textContent='完成問題を採用しました。カギや盤面を編集できます。';
+    showView('editor');
+    say('完成した盤面を編集できます。戻すボタンで採用前に戻れます。','success');
   }catch(e){say('完成候補を採用できませんでした：'+e.message,'error');}
 });
 
 render();
+showView('welcome');
