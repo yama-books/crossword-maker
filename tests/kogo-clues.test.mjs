@@ -8,15 +8,15 @@ const bank=readKogoClues(readFileSync(new URL('../data/learning/kogo_clues.jsonl
 const lex=parseTsv(readFileSync(new URL('../data/lexicon/approved_lexicon.tsv',import.meta.url),'utf8'));
 const byId=id=>bank.find(r=>r.clue_id===id);
 
-test('K3: 66 sourced candidates have valid kana, IDs, status, metadata, and link targets',()=>{
+test('K4: 100 sourced candidates have valid kana, IDs, status, metadata, and link targets',()=>{
  const r=auditKogoClues(bank,lex);
  assert.deepEqual(r.issues,[]);
  assert.equal(r.ok,true);
- assert.equal(r.total,66);
+ assert.equal(r.total,100);
  assert.equal(r.ready,0); // no teacher has yet approved these for automatic selection
  assert.equal(r.holds,1);
  assert.equal(r.linked,10);
- assert.deepEqual(Object.values(r.types).reduce((a,b)=>a+b,0),66);
+ assert.deepEqual(Object.values(r.types).reduce((a,b)=>a+b,0),100);
  assert.ok(new Set(bank.map(x=>x.answer)).size<bank.length); // one answer, multiple classical clues
 });
 test('K2: central sense of いと supports multiple legitimate translations',()=>{
@@ -109,4 +109,32 @@ test('K3: forbid explanatory instructions and unchecked reference URLs',()=>{
  const reference=structuredClone(bank);
  reference[50].source_url='https://unverified.example.invalid/';
  assert.ok(auditKogoClues(reference,lex).issues.some(x=>x.includes('出典URL')));
+});
+
+test('K4: passage quotation recall is always hard, but vocabulary meaning stays accessible',()=>{
+ const literal=bank.filter(x=>x.difficulty_basis==='text_recall');
+ assert.ok(literal.length>=37);
+ assert.ok(literal.every(x=>x.difficulty===3));
+ assert.equal(byId('KOGO-CLUE-001').difficulty,3);
+ assert.equal(byId('KOGO-CLUE-049').difficulty,3);
+ assert.equal(byId('KOGO-CLUE-023').difficulty,2); // literal blanks within a translation are NOT recall
+ assert.equal(byId('KOGO-CLUE-023').difficulty_basis,'vocabulary_or_knowledge');
+ const broken=structuredClone(bank);
+ broken.find(x=>x.clue_id==='KOGO-CLUE-002').difficulty=1;
+ assert.ok(auditKogoClues(broken,lex).issues.some(x=>x.includes('本文引用')));
+});
+test('K4: lexical growth gives 34 new word-related clues in both directions',()=>{
+ const newer=bank.filter(x=>Number(x.clue_id.slice(-3))>=67);
+ assert.equal(newer.length,34);
+ assert.ok(newer.every(x=>['modern_meaning','classical_word'].includes(x.question_type)));
+ assert.ok(newer.every(x=>x.work==='古語辞書'));
+ assert.ok(newer.every(x=>[1,2].includes(x.difficulty)));
+ assert.equal(byId('KOGO-CLUE-067').answer,'イミジ');
+ assert.equal(byId('KOGO-CLUE-067').question_type,'classical_word');
+ assert.equal(byId('KOGO-CLUE-068').question_type,'modern_meaning');
+ assert.equal(byId('KOGO-CLUE-100').answer,'メズラシイ');
+ assert.equal(new Set(newer.map(x=>x.source_reference)).size,14);
+ const arigatashi=newer.filter(x=>x.meaning_group_id==='kogo:arigatashi:rare'&&x.question_type==='modern_meaning');
+ assert.equal(arigatashi.length,2);
+ for(const r of arigatashi)assert.deepEqual(r.acceptable_answer_readings,['メツタニナイ','メズラシイ']);
 });
