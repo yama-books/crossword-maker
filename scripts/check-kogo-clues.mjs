@@ -24,7 +24,7 @@ export function auditKogoClues(records,lexicon){
     if(!TYPES.has(rec.question_type)||!STATES.has(rec.review_status))issues.push(where+': 分類またはレビュー状態が不正');
     if(![1,2,3].includes(rec.difficulty))issues.push(where+': 難易度の範囲外');
     if(rec.classics_related!==true||typeof rec.answer_is_classical!=='boolean')issues.push(where+': 古典フラグが不正');
-    if(typeof rec.prompt!=='string'||rec.prompt.trim().length<12||rec.prompt.length>280)
+    if(typeof rec.prompt!=='string'||rec.prompt.trim().length<8||rec.prompt.length>280)
       issues.push(where+': 問いの文字数が不正');
     if(typeof rec.answer!=='string'||!/^[ァ-ヴー]{2,15}$/u.test(rec.answer))
       issues.push(where+': 盤面の解答カナが不正');
