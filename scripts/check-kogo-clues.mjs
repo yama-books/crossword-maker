@@ -23,6 +23,15 @@ export function auditKogoClues(records,lexicon){
     idSet.add(rec.clue_id);
     if(!TYPES.has(rec.question_type)||!STATES.has(rec.review_status))issues.push(where+': 分類またはレビュー状態が不正');
     if(![1,2,3].includes(rec.difficulty))issues.push(where+': 難易度の範囲外');
+    // Recalling a missing portion of a source text is hard even for short words.
+    // A vocabulary meaning question may quote its own blank, but that is NOT text recall.
+    const literalTextRecall=rec.question_type==='passage' ||
+      (rec.question_type!=='modern_meaning' && rec.work!=='古語辞書' &&
+       typeof rec.prompt==='string' && /「[^」]*〇[^」]*」/.test(rec.prompt));
+    if(literalTextRecall && (rec.difficulty!==3 || rec.difficulty_basis!=='text_recall'))
+      issues.push(where+': 本文引用の復元問題は「難しい」で登録してください');
+    if(!literalTextRecall && rec.difficulty_basis!=='vocabulary_or_knowledge')
+      issues.push(where+': 語彙・知識問題の難易度区分が不正');
     if(rec.classics_related!==true||typeof rec.answer_is_classical!=='boolean')issues.push(where+': 古典フラグが不正');
     if(typeof rec.prompt!=='string'||rec.prompt.trim().length<8||rec.prompt.length>280)
       issues.push(where+': 問いの文字数が不正');
