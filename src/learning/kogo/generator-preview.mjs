@@ -76,8 +76,8 @@ export function generateKogoPreviewPuzzle({
       puzzle,valid:true,solver:{nodes:result.totalNodes,patterns:result.triedPatterns},
       failures,warnings:[
         '内部検証用です。未承認の古典カギと一般辞書を含み、生徒向けに利用できません',
-        ...(measured.kogoSlots<puzzle.entries.length?'補助語彙の出題が含まれます':[]),
-        ...(measured.vocabularyShareWithinKogo<vocabularyShare?'配置後の古典カギ内の単語割合が目標に届いていません':[])
+        ...(measured.kogoSlots<puzzle.entries.length?['補助語彙の出題が含まれます']:[]),
+        ...(measured.vocabularyShareWithinKogo<vocabularyShare?['配置後の古典カギ内の単語割合が目標に届いていません']:[])
       ]};
   }
   return {status:'not_completed',audience,attempts:failures.length,
