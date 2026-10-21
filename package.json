@@ -10,7 +10,8 @@
     "sync": "node scripts/build.mjs --sync",
     "build": "node scripts/build.mjs",
     "lexicon:export": "node scripts/export-lexicon.mjs",
-    "kogo:check": "node scripts/check-kogo-clues.mjs"
+    "kogo:check": "node scripts/check-kogo-clues.mjs",
+    "kogo:preview": "node scripts/preview-kogo-selector.mjs"
   },
   "engines": {
     "node": ">=22"
