@@ -48,12 +48,11 @@ test('K5: student release fails closed if there are zero teacher-approved questi
   const approved=structuredClone(records);
   approved.find(x=>x.clue_id==='KOGO-CLUE-019').review_status='human_checked';
   approved.find(x=>x.clue_id==='KOGO-CLUE-020').review_status='human_checked';
-  approved.find(x=>x.clue_id==='KOGO-CLUE-024').review_status='human_checked';
   const result=selectKogoClues(approved,{audience:'student',count:3,difficulty:'hard'});
   assert.equal(result.status,'approved_selection');
   assert.equal(result.achieved,1); // いと: たいへん/たいそう are one meaning-group
   assert.ok(result.entries.every(x=>x.review_status==='human_checked'));
-  assert.ok(result.entries.every(x=>x.id!=='KOGO-CLUE-024'||false)); // held source requires actual approval outside this unit test
+  assert.equal(result.entries.filter(x=>x.meaning_group_id==='kogo:ito:intensifier').length,1);
 });
 
 test('K5: topic/length filters and shortage reporting are explicit, not invented entries',()=>{
