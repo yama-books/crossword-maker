@@ -19,6 +19,8 @@ jobs:
         run: npm test
       - name: Check classical clue bank and review states
         run: npm run kogo:check
+      - name: Measure internal 5x5 classical puzzle previews (fixed seeds)
+        run: npm run kogo:measure
       - name: Check generated player is up to date
         run: npm run check
       - name: Build static site
