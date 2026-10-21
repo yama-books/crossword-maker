@@ -34,6 +34,8 @@ test('K6: a bounded fixed 5x5 experiment reports validity and actual measured cl
    assert.ok(r.measured.vocabularyShareWithinKogo>=0&&r.measured.vocabularyShareWithinKogo<=1);
    assert.ok(r.puzzle.entries.some(e=>r.selection.entries.some(s=>s.answer===e.answer&&s.clue===e.clue)));
    assert.ok(r.warnings.some(w=>w.includes('未承認')));
+   assert.ok(r.warnings.includes('補助語彙の出題が含まれます'));
+   assert.ok(r.warnings.every(w=>typeof w==='string'&&w.length>=8));
  }else{
    assert.equal(r.puzzle,null);
    assert.equal(r.attempts,3);
