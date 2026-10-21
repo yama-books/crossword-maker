@@ -11,7 +11,8 @@
     "build": "node scripts/build.mjs",
     "lexicon:export": "node scripts/export-lexicon.mjs",
     "kogo:check": "node scripts/check-kogo-clues.mjs",
-    "kogo:preview": "node scripts/preview-kogo-selector.mjs"
+    "kogo:preview": "node scripts/preview-kogo-selector.mjs",
+    "kogo:measure": "node scripts/measure-kogo-generator.mjs"
   },
   "engines": {
     "node": ">=22"
